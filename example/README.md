@@ -2,10 +2,12 @@
 
 ## Installation
 
-First, install the `opentelemetry-auto-instrumentation` gem using `gem install` (not through Bundler):
+First, install the `opentelemetry-auto-instrumentation` gem using `gem install` (not through Bundler) for each example:
 
 ```bash
 gem install opentelemetry-auto-instrumentation
+# e.g.
+# gem install ../../opentelemetry-auto-instrumentation-X.X.X.gem
 ```
 
 This gem should be installed outside your Gemfile so that it can be loaded globally through the `RUBYOPT` environment variable.
