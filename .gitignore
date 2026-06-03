@@ -1,0 +1,19 @@
+**/Gemfile.lock
+**/.yardoc
+**/doc
+**/docs
+**/coverage
+**/pkg
+**/*.gem
+**/.bundle
+**/.DS_Store
+**/.byebug_history
+
+# IDE Settings
+**/.idea/
+
+# rbenv configuration
+.ruby-version
+
+tags
+!**/*/.gitkeep

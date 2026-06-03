@@ -1,0 +1,23 @@
+services:
+  app:
+    extends:
+      service: base
+      file: ./docker-base.yml
+    build:
+      context: .
+    working_dir: /app
+
+  ex-simple-example:
+    extends:
+      service: base
+      file: ./docker-base.yml
+    working_dir: /app/example/simple-example
+
+  ex-rails-example:
+    extends:
+      service: base
+      file: ./docker-base.yml
+    working_dir: /app/example/rails-example
+
+volumes:
+  bundle:

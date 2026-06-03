@@ -1,0 +1,87 @@
+plugins:
+  - rubocop-minitest
+  - rubocop-rspec
+  - rubocop-rake
+  - rubocop-performance
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+  Exclude:
+    - Rakefile
+    - "rakelib/**/*"
+    - "**/example/*"
+    - "bin/instrumentation_generator"
+    - "**/**/vendor/bundle/**/*"
+    - "**/proto/**"
+Bundler/OrderedGems:
+  Enabled: false
+Lint/ConstantDefinitionInBlock:
+  Exclude:
+    - "**/*test.rb"
+Lint/EmptyBlock:
+  Exclude:
+    - "**/*test.rb"
+Lint/UnusedMethodArgument:
+  Enabled: false
+Metrics/AbcSize:
+  Enabled: false
+Metrics/BlockLength:
+  Enabled: false
+Metrics/ClassLength:
+  Enabled: false
+Metrics/CyclomaticComplexity:
+  Enabled: false
+Metrics/MethodLength:
+  Enabled: false
+Metrics/PerceivedComplexity:
+  Enabled: false
+Naming/FileName:
+  Exclude:
+    - "**/opentelemetry-*"
+Style/Documentation:
+  Exclude:
+    - "**/test/**/*"
+    - "**/*test*"
+Style/DocumentationMethod:
+  Enabled: true
+  Severity: info
+  Exclude:
+    - "**/test/**/*"
+    - "**/*test*"
+Style/FrozenStringLiteralComment:
+  Exclude:
+    - "**/gemfiles/*"
+Style/ModuleFunction:
+  Enabled: false
+Style/MultilineIfModifier:
+  Exclude:
+    - "**/test/**/*"
+Style/OneClassPerFile:
+  Enabled: false
+Style/RedundantRegexpEscape:
+  Enabled: false
+Style/StringLiterals:
+  Exclude:
+    - "**/gemfiles/*"
+Style/SlicingWithRange:
+  Enabled: false
+Style/CaseLikeIf:
+  Enabled: false
+## 1.41.1
+Gemspec/RequireMFA:
+  # We probably want to figure out how to set this up for the organization
+  Enabled: false
+Layout/LineLength:
+  Enabled: true
+  Max: 250
+Layout/EndOfLine:
+  EnforcedStyle: lf
+
+# we need to review the below
+Minitest/LiteralAsActualArgument:
+  Enabled: false
+Minitest/EmptyLineBeforeAssertionMethods:
+  Enabled: false
+Rake/DuplicateTask:
+  Enabled: false
