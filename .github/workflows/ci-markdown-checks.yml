@@ -1,0 +1,54 @@
+name: File Checks
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+  pull-requests: write # required for posting PR review comments
+
+jobs:
+  markdown-lint-check:
+    name: Markdown Lint Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # equivalent cli: markdownlint-cli2  "**/*.md" "!**/CHANGELOG.md"  --config .markdownlint-cli2.yaml
+      - name: "Markdown Lint Check"
+        uses: DavidAnson/markdownlint-cli2-action@6b51ade7a9e4a75a7ad929842dd298a3804ebe8b # v23.1.0
+        with:
+          config: .markdownlint-cli2.yaml
+          fix: false
+          globs: |
+            **/*.md
+
+  markdown-link-check:
+    name: Markdown Link Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # equivalent cli: linkspector check
+      - name: Run linkspector
+        uses: umbrelladocs/action-linkspector@963b6264d7de32c904942a70b488d3407453049e # v1.5.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-annotations
+          fail_on_error: true
+
+  ruby-check:
+    name: RuboCop Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
+        with:
+          ruby-version: "3.3.11"
+          bundler-cache: true
+
+      - name: Run RuboCop
+        run: bundle exec rubocop

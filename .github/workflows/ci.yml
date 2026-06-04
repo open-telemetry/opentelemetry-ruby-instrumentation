@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths: &path_filters
+      - "lib/**"
+      - "test/**"
+      - "Gemfile"
+      - "Gemfile.lock"
+      - "*.gemspec"
+      - ".github/workflows/ci.yml"
+      - ".github/actions/**"
+      - "Rakefile"
+  pull_request:
+    branches:
+      - main
+    paths: *path_filters
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }} # Ensure that only one instance of this workflow is running per event/PR/ref
+  cancel-in-progress: true # Cancel any previous runs of this workflow
+
+jobs:
+  auto-instrumentation:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+    name: "auto-instrumentation / ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: "Test Ruby 4.0"
+        uses: ./.github/actions/test_gem
+        with:
+          gem: "opentelemetry-auto-instrumentation"
+          ruby: "4.0"
+      - name: "Test Ruby 3.4"
+        uses: ./.github/actions/test_gem
+        with:
+          gem: "opentelemetry-auto-instrumentation"
+          ruby: "3.4"
+      - name: "Test Ruby 3.3"
+        uses: ./.github/actions/test_gem
+        with:
+          gem: "opentelemetry-auto-instrumentation"
+          ruby: "3.3"
+          yard: true
+          build: true
+      - name: "Test JRuby"
+        uses: ./.github/actions/test_gem
+        with:
+          gem: "opentelemetry-auto-instrumentation"
+          ruby: "jruby-10.0.2.0"

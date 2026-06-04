@@ -48,7 +48,7 @@ OTEL_RUBY_REQUIRE_BUNDLER=true RUBYOPT="-r opentelemetry-auto-instrumentation" r
 
 Installing `opentelemetry-auto-instrumentation` automatically includes:
 
-```
+```text
 opentelemetry-sdk
 opentelemetry-api
 opentelemetry-instrumentation-all
@@ -264,11 +264,6 @@ OpenTelemetry Ruby ensures compatibility with the current supported versions of 
 
 Apache 2.0 - See [LICENSE](LICENSE) for more information.
 
-[ruby-sig]: https://github.com/open-telemetry/community#ruby-sig
-[community-meetings]: https://github.com/open-telemetry/community#community-meetings
-[slack-channel]: https://cloud-native.slack.com/archives/C01NWKKMKMY
-[discussions-url]: https://github.com/open-telemetry/opentelemetry-ruby-instrumentation/discussions
-[opentelemetry-operator]: https://github.com/open-telemetry/opentelemetry-operator
 [otel-sdk-readme]: https://github.com/open-telemetry/opentelemetry-ruby/tree/main/sdk
 [otel-metrics-sdk-readme]: https://github.com/open-telemetry/opentelemetry-ruby/tree/main/metrics_sdk
 [otel-logs-sdk-readme]: https://github.com/open-telemetry/opentelemetry-ruby/tree/main/logs_sdk

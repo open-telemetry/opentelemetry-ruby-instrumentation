@@ -1,0 +1,50 @@
+name: Force release
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: Component to release
+        required: true
+      version:
+        description: Version to release
+        required: true
+      flags:
+        description: Extra flags to pass to the release script
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  release-perform:
+    permissions:
+      contents: write # required for creating releases
+      pull-requests: write # required for updating label on PR, posting comments
+      issues: write # required for creating new issues on failed releases
+    runs-on: ubuntu-24.04
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/.toys/release/Gemfile
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install Ruby
+        uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
+        with:
+          ruby-version: "4.0.3"
+          bundler-cache: true
+      - name: Perform release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+          RELEASE_REF: ${{ github.sha }}
+          RELEASE_FLAGS: ${{ github.event.inputs.flags }}
+          RELEASE_NAME: ${{ github.event.inputs.name }}
+          RELEASE_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          bundle exec toys release perform --yes --verbose \
+            "--release-ref=$RELEASE_REF" \
+            $RELEASE_FLAGS \
+            "$RELEASE_NAME" "$RELEASE_VERSION" \
+            < /dev/null

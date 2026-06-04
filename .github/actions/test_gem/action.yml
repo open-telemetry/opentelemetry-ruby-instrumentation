@@ -1,0 +1,92 @@
+name: Test Gem
+description: Tests a specific Gem
+inputs:
+  gem:
+    description: Gem to test
+    required: true
+    type: string
+  ruby:
+    description: Ruby version to use
+    required: true
+    type: string
+  yard:
+    description: Run YARD documentation
+    required: false
+    type: boolean
+    default: false
+  minimum_coverage:
+    description: Minimum test coverage
+    required: false
+    type: string
+    default: 85
+  build:
+    description: Build gem
+    required: false
+    type: boolean
+    default: false
+
+runs:
+  using: composite
+  steps:
+    - name: Setup
+      id: setup
+      shell: bash
+      env:
+        GEM_INPUT: ${{ inputs.gem }}
+      run: |
+        # 🛠️ Setup 🛠️
+        dir=$(find . -iname "${GEM_INPUT}.gemspec" -exec dirname {} \;)
+        echo "gem_dir=${dir}" >> $GITHUB_OUTPUT
+
+        # We install multiple ruby versions here, and that makes for some
+        # annoying bundler conflicts when we get to the JRuby step. Removing
+        # the lockfile slows things down a bit, but we should still get most
+        # of the benefits of bundler caching.
+        rm -f "${dir}/Gemfile.lock"
+
+    - name: Install Ruby ${{ inputs.ruby }} with dependencies
+      uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
+      with:
+        ruby-version: "${{ inputs.ruby }}"
+        working-directory: "${{ steps.setup.outputs.gem_dir }}"
+        bundler-cache: true
+        cache-version: "${{ inputs.ruby }}"
+
+    - name: Test Gem
+      shell: bash
+      run: |
+        # 🍿 Test Gem 🍿
+        bundle exec rake test
+      working-directory: "${{ steps.setup.outputs.gem_dir }}"
+
+    - name: YARD
+      shell: bash
+      if: "${{ inputs.yard == 'true' }}"
+      run: |
+        # 📄 Yard Docs 📄
+        bundle exec rake yard
+      working-directory: "${{ steps.setup.outputs.gem_dir }}"
+
+    - name: Coverage
+      shell: bash
+      # This starts a new simplecov run which tracks nothing of its own,
+      # but merges with the existing coverage reports generated during testing.
+      env:
+        MINIMUM_COVERAGE: ${{ inputs.minimum_coverage || 85 }}
+      run: 'bundle exec ruby -e ''require "simplecov"; SimpleCov.minimum_coverage(ENV["MINIMUM_COVERAGE"].to_i); SimpleCov.collate Dir["coverage/**/.resultset.json"];'''
+      working-directory: "${{ steps.setup.outputs.gem_dir }}"
+
+    - name: Cleanup coverage artifacts
+      shell: bash
+      run: rm -rf coverage
+      working-directory: "${{ steps.setup.outputs.gem_dir }}"
+
+    - name: Build Gem
+      shell: bash
+      if: "${{ inputs.build == 'true' }}"
+      env:
+        GEM_INPUT: ${{ inputs.gem }}
+      run: |
+        # 📦 Build Gem 📦
+        gem build "${GEM_INPUT}.gemspec"
+      working-directory: "${{ steps.setup.outputs.gem_dir }}"
