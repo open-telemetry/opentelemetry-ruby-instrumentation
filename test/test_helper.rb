@@ -5,6 +5,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 require 'simplecov'
+SimpleCov.start
+
 require 'rake'
 require 'minitest'
 require 'minitest/autorun'
