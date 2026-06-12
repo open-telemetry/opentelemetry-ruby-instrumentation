@@ -88,6 +88,7 @@ describe 'OpenTelemetry::AutoInstrumentation' do
       _(result[:error]).must_be_nil
       _(result[:spans]).wont_be_empty
       span = result[:spans].first
+
       _(span[:name]).must_equal 'test-span'
       _(span[:attributes]['test.key']).must_equal 'test.value'
     end
@@ -104,8 +105,10 @@ describe 'OpenTelemetry::AutoInstrumentation' do
       _(result[:error]).must_be_nil
       _(result[:metrics]).wont_be_empty
       metric = result[:metrics].find { |m| m[:name] == 'test.counter' }
+
       _(metric).wont_be_nil
       data_point = metric[:data_points].first
+
       _(data_point[:value]).must_equal 3
       _(data_point[:attributes]['env']).must_equal 'test'
     end
@@ -122,6 +125,7 @@ describe 'OpenTelemetry::AutoInstrumentation' do
       _(result[:error]).must_be_nil
       _(result[:logs]).wont_be_empty
       log = result[:logs].first
+
       _(log[:body]).must_equal 'test log message'
       _(log[:severity_text]).must_equal 'INFO'
     end

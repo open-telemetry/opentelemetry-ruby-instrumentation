@@ -13,6 +13,7 @@ module OTelBundlerPatch
     @_otel_mutex = Mutex.new
     @_otel_initialized = false
 
+    # Returns all instrumentation classes registered in the OpenTelemetry instrumentation registry.
     def self._otel_registry_instrumentation_classes
       registry = ::OpenTelemetry::Instrumentation.registry
 
@@ -23,6 +24,7 @@ module OTelBundlerPatch
       []
     end
 
+    # Converts a CamelCase or hyphenated string to snake_case.
     def self._otel_snake_case(value)
       value
         .gsub(/([A-Z]+)([A-Z][a-z])/, '\\1_\\2')
@@ -31,6 +33,7 @@ module OTelBundlerPatch
         .downcase
     end
 
+    # Returns all snake_case alias strings for a given fully-qualified instrumentation name.
     def self._otel_registry_aliases_for(instrumentation_name)
       suffix = instrumentation_name.delete_prefix('OpenTelemetry::Instrumentation::')
       segment_variants = suffix.split('::').map do |segment|
@@ -46,6 +49,7 @@ module OTelBundlerPatch
       end
     end
 
+    # Builds and caches a hash mapping alias names to canonical instrumentation names.
     def self._otel_registry_lookup
       @_otel_registry_lookup ||= _otel_registry_instrumentation_classes.each_with_object({}) do |instrumentation_class, lookup|
         instrumentation_name = instrumentation_class.instance.name
@@ -57,6 +61,7 @@ module OTelBundlerPatch
       end
     end
 
+    # Detects and merges resource attributes from detectors listed in OTEL_RUBY_RESOURCE_DETECTORS.
     def self._otel_detect_resource_from_env
       resource_map = {
         'container' => (defined?(::OpenTelemetry::Resource::Detector::Container) ? ::OpenTelemetry::Resource::Detector::Container : nil),
@@ -70,6 +75,7 @@ module OTelBundlerPatch
       end
     end
 
+    # Creates a Resource containing distro name and version attributes.
     def self._otel_distro_resource
       ::OpenTelemetry::SDK::Resources::Resource.create(
         {
@@ -79,6 +85,7 @@ module OTelBundlerPatch
       )
     end
 
+    # Returns a list of canonical instrumentation names enabled via OTEL_RUBY_ENABLED_INSTRUMENTATIONS.
     def self._otel_determine_enabled_instrumentation
       env = ENV['OTEL_RUBY_ENABLED_INSTRUMENTATIONS'].to_s
 
@@ -94,6 +101,7 @@ module OTelBundlerPatch
       end
     end
 
+    # Warns if any opentelemetry- gems are found in the Gemfile, as they may conflict with auto-instrumentation.
     def self._otel_check_for_bundled_otel_gems
       bundled_otel_gems = Bundler.definition.dependencies.select do |dep|
         dep.name.start_with?('opentelemetry-')
@@ -112,6 +120,7 @@ module OTelBundlerPatch
       warn "[OpenTelemetry] WARNING: Unable to check Gemfile for OpenTelemetry gems: #{e.message}" if ENV['OTEL_RUBY_AUTO_INSTRUMENTATION_DEBUG'] == 'true'
     end
 
+    # Initializes the OpenTelemetry SDK exactly once using a mutex-protected check.
     def self._otel_require_otel
       @_otel_mutex.synchronize do
         return if @_otel_initialized
@@ -146,6 +155,7 @@ module OTelBundlerPatch
     end
   end
 
+  # Overrides Kernel#require to trigger OpenTelemetry initialization after each require call.
   def require(...)
     super
     OTelInitializer._otel_require_otel

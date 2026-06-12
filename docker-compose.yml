@@ -1,23 +1,18 @@
 services:
   app:
-    extends:
-      service: base
-      file: ./docker-base.yml
     build:
       context: .
+    command: /bin/bash
+    image: opentelemetry/opentelemetry-ruby-instrumentation
+    stdin_open: true
+    tmpfs:
+      - /tmp
+    tty: true
+    user: "1000:1000"
+    volumes:
+      - .:/app:cached
+      - bundle:/bundle
     working_dir: /app
-
-  ex-simple-example:
-    extends:
-      service: base
-      file: ./docker-base.yml
-    working_dir: /app/example/simple-example
-
-  ex-rails-example:
-    extends:
-      service: base
-      file: ./docker-base.yml
-    working_dir: /app/example/rails-example
 
 volumes:
   bundle:

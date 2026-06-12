@@ -143,7 +143,8 @@ def run_in_subprocess(env_vars = {}, opts = {})
       write_pipe.write(Marshal.dump(result))
     rescue StandardError => e
       $stderr = old_stderr if defined?(old_stderr)
-      error_result = Marshal.dump({ error: e.message, backtrace: e.backtrace, warning_output: defined?(stderr_capture) ? stderr_capture.string : '' })
+      error_result = Marshal.dump({ error: e.message, backtrace: e.backtrace,
+                                    warning_output: defined?(stderr_capture) ? stderr_capture.string : '' })
       write_pipe.write(error_result)
     ensure
       $stderr = old_stderr if defined?(old_stderr)

@@ -48,5 +48,6 @@ Gem::Specification.new do |spec|
     spec.metadata['source_code_uri'] = "https://github.com/open-telemetry/opentelemetry-ruby-instrumentation/tree/#{spec.name}/v#{spec.version}/packages/auto-instrumentation"
     spec.metadata['bug_tracker_uri'] = 'https://github.com/open-telemetry/opentelemetry-ruby-instrumentation/issues'
     spec.metadata['documentation_uri'] = "https://rubydoc.info/gems/#{spec.name}/#{spec.version}"
+    spec.metadata['rubygems_mfa_required'] = 'true'
   end
 end

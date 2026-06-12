@@ -12,6 +12,7 @@ Bundler.require
 
 # NoOp meter for when OpenTelemetry is not available
 class NoOpCounter
+  # Accepts a value and optional attributes; performs no operation.
   def add(value, attributes: {})
     # No-op implementation
   end
@@ -19,6 +20,7 @@ end
 
 # NoOp logger for when OpenTelemetry is not available
 class NoOpLogger
+  # Accepts severity and body arguments; performs no operation.
   def on_emit(severity_text: nil, body: nil)
     # No-op implementation
   end
@@ -49,12 +51,14 @@ end
 # ApplicationController
 # rubocop disable:Style/OneClassPerFile
 class ApplicationController < ActionController::API
+  # Handles GET / and renders a hello world JSON response.
   def index
     MyApp.config.x.otel_request_counter.add(1, attributes: { 'http.route' => '/' })
     MyApp.config.x.otel_logger.on_emit(severity_text: 'INFO', body: 'Handling request: GET /')
     render json: { message: 'Hello World!', time: Time.current }
   end
 
+  # Handles GET /hello and renders a personalized greeting JSON response.
   def hello
     MyApp.config.x.otel_request_counter.add(1, attributes: { 'http.route' => '/hello' })
     name = params[:name] || 'World'
@@ -62,6 +66,7 @@ class ApplicationController < ActionController::API
     render json: { greeting: "Hello #{name}!" }
   end
 
+  # Handles POST /data and renders the received data as a JSON response.
   def create
     MyApp.config.x.otel_request_counter.add(1, attributes: { 'http.route' => '/data' })
     MyApp.config.x.otel_logger.on_emit(severity_text: 'INFO', body: 'Handling request: POST /data')
