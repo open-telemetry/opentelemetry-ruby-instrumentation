@@ -10,7 +10,7 @@ gemspec
 
 group :test do
   gem 'minitest', '~> 6.0.6'
-  gem 'opentelemetry-test-helpers', '~> 0.8.0'
+  gem 'opentelemetry-test-helpers', '~> 0.9.0'
   gem 'rake', '~> 13.4.2'
   gem 'rubocop', '~> 1.86.0'
   gem 'rubocop-minitest', '~> 0.39.0'
