@@ -4,6 +4,7 @@
     "config:best-practices",
     "helpers:pinGitHubActionDigestsToSemver",
     ":separateMultipleMajorReleases",
+    ":semanticCommitTypeAll(ci)",
   ],
   prConcurrentLimit: 12,
   prHourlyLimit: 12,
