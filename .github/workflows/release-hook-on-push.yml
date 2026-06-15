@@ -1,0 +1,34 @@
+name: "[release hook] Update open releases"
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  release-update-open-requests:
+    permissions:
+      contents: write # required for updating releases
+      pull-requests: write # required for updating release PRs
+    runs-on: ubuntu-24.04
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/.toys/release/Gemfile
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install Ruby
+        uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
+        with:
+          ruby-version: "4.0.3"
+          bundler-cache: true
+      - name: Update open releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bundle exec toys release _onpush --verbose \
+            < /dev/null

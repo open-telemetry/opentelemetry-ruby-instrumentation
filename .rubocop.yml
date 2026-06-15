@@ -1,0 +1,30 @@
+plugins:
+  - rubocop-minitest
+  - rubocop-rspec
+  - rubocop-rake
+  - rubocop-performance
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+Style/OneClassPerFile:
+  Exclude:
+    - "example/**/*.rb"
+Naming/FileName:
+  Enabled: false
+Metrics/ModuleLength:
+  Enabled: false
+Metrics/MethodLength:
+  Enabled: false
+Layout/LineLength:
+  Enabled: false
+Metrics/CyclomaticComplexity:
+  Enabled: false
+Metrics/AbcSize:
+  Enabled: false
+Metrics/BlockLength:
+  Exclude:
+    - "**/*test*"
+Metrics/PerceivedComplexity:
+  Exclude:
+    - "**/*test*"

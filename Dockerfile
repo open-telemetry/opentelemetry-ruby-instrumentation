@@ -1,0 +1,71 @@
+FROM ruby:3.3.11-alpine3.23@sha256:ba98f4a71edbf747c93b18723f7d91547054d4e9b1337c6d6ab8ca877158f3e2 as ruby
+
+# Metadata
+LABEL maintainer="open-telemetry/opentelemetry-ruby-instrumentation"
+
+# User and Group for app isolation
+ARG APP_UID=1000
+ARG APP_USER=app
+ARG APP_GID=1000
+ARG APP_GROUP=app
+ARG APP_DIR=/app
+
+ENV SHELL /bin/bash
+
+ARG PACKAGES="\
+    bash \
+    binutils \
+    build-base \
+    coreutils  \
+    findutils \
+    git \
+    grep \
+    less \
+    libstdc++ \
+    libxml2-dev \
+    libxslt-dev \
+    openssl \
+    postgresql-dev \
+    tzdata \
+    util-linux \
+    yaml-dev \
+    curl \
+    "
+# Install packages
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache ${PACKAGES}
+
+# Configure Bundler and PATH
+ENV LANG=C.UTF-8 \
+    GEM_HOME=/bundle \
+    BUNDLE_JOBS=20 \
+    BUNDLE_RETRY=3
+ENV BUNDLE_PATH $GEM_HOME
+ENV BUNDLE_APP_CONFIG="${BUNDLE_PATH}" \
+    BUNDLE_BIN="${BUNDLE_PATH}/bin" \
+    BUNDLE_GEMFILE=Gemfile
+ENV PATH "${APP_DIR}/bin:${BUNDLE_BIN}:${PATH}"
+
+# Upgrade RubyGems and install required Bundler version
+RUN gem update --system && \
+    gem update bundler && \
+    gem cleanup
+
+# Add custom app User and Group
+RUN addgroup -S -g "${APP_GID}" "${APP_GROUP}" && \
+    adduser -S -g "${APP_GROUP}" -u "${APP_UID}" "${APP_USER}"
+
+# Create directories for the app code
+RUN mkdir -p "${APP_DIR}" \
+    "${APP_DIR}/tmp" && \
+    chown -R "${APP_USER}":"${APP_GROUP}" "${APP_DIR}" \
+    "${APP_DIR}/tmp" \
+    "${BUNDLE_PATH}/"
+
+USER "${APP_USER}"
+
+WORKDIR "${APP_DIR}"
+
+# Commands will be supplied via `docker-compose`
+CMD []

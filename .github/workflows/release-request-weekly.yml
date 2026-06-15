@@ -1,0 +1,48 @@
+name: Open release request - Weekly
+
+on:
+  schedule:
+    - cron: "0 15 * * 2"
+
+permissions:
+  contents: read
+
+jobs:
+  release-request:
+    permissions:
+      contents: write # required for creating releases
+      pull-requests: write # required for creating release PRs
+    runs-on: ubuntu-24.04
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/.toys/release/Gemfile
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
+        with:
+          ruby-version: "4.0.3"
+          bundler-cache: true
+
+      - name: Create otelbot app token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        id: app-token
+        with:
+          app-id: ${{ vars.OTELBOT_APP_ID }}
+          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Open release pull request
+        env:
+          # Using the app token instead of GITHUB_TOKEN to trigger workflows
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          TARGET_BRANCH: ${{ github.ref }}
+        run: |
+          bundle exec toys release request --yes --verbose \
+            "--target-branch=$TARGET_BRANCH" \
+            < /dev/null

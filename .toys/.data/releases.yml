@@ -1,0 +1,26 @@
+# This file controls the toys-release gem.
+
+# The repo organization and name.
+repo: open-telemetry/opentelemetry-ruby-instrumentation
+
+# Disable pre-release GitHub check requirements.
+required_checks: false
+
+# If commits are added when release pull requests are open, update those pull
+# requests to reflect the new commits.
+update_existing_requests: true
+
+# Git user attached to commits for release pull requests.
+git_user_name: otelbot
+git_user_email: 197425009+otelbot@users.noreply.github.com
+
+# Sets the list symbol used for bullet points in the generated changelog to be "-" which complies with markdownlint and prettier.
+changelog_bullet: "-"
+
+changelog_release_header_format: "## v%v / %Y-%m-%d"
+
+# List of all releasable gems.
+gems:
+  - name: opentelemetry-auto-instrumentation
+    directory: .
+    version_rb_path: lib/opentelemetry/auto_instrumentation/version.rb
