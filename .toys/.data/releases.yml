@@ -23,4 +23,4 @@ changelog_release_header_format: "## v%v / %Y-%m-%d"
 gems:
   - name: opentelemetry-auto-instrumentation
     directory: .
-    version_rb_path: lib/opentelemetry/auto_instrumentation/version.rb
+    version_rb_path: lib/version.rb
