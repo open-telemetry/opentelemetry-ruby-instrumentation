@@ -16,7 +16,7 @@ group :test do
   gem 'rubocop-minitest', '~> 0.39.0'
   gem 'rubocop-performance', '~> 1.26.0'
   gem 'rubocop-rake', '~> 0.7.1'
-  gem 'rubocop-rspec', '~> 3.9.0'
+  gem 'rubocop-rspec', '~> 3.10.0'
   gem 'simplecov', '~> 0.22.0'
   gem 'yard', '~> 0.9.44'
   if RUBY_VERSION >= '3.4'
