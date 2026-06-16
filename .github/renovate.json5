@@ -6,6 +6,8 @@
     ":separateMultipleMajorReleases",
     ":semanticCommitTypeAll(ci)",
   ],
+  semanticCommits: "enabled",
+  prTitle: "{{semanticPrefix}}{{currentValue}} {{{currentDepName}}}",
   prConcurrentLimit: 12,
   prHourlyLimit: 12,
   packageRules: [
