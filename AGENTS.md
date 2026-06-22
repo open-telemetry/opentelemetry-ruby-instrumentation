@@ -31,7 +31,7 @@ For new features and behavior changes, unless the task says otherwise:
 
 ## Repository Structure
 
-```
+```console
 lib/opentelemetry-auto-instrumentation.rb   # Main gem entry point; contains OTelBundlerPatch
 lib/opentelemetry/auto_instrumentation/
   version.rb                                # Gem version
@@ -93,7 +93,7 @@ Ruby version updates in gemspecs and Dockerfile require dashboard approval (`dep
 ## Key Environment Variables
 
 | Variable | Purpose |
-|---|---|
+| --- | --- |
 | `OTEL_RUBY_REQUIRE_BUNDLER` | Set `true` for frameworks that don't auto-call `Bundler.require` (e.g., Sinatra) |
 | `OTEL_RUBY_ENABLED_INSTRUMENTATIONS` | Comma-separated list to load only specific instrumentations |
 | `OTEL_RUBY_RESOURCE_DETECTORS` | Enable resource detectors: `container`, `azure`, `aws` |
@@ -118,5 +118,4 @@ Ruby version updates in gemspecs and Dockerfile require dashboard approval (`dep
 ## Community
 
 - Slack: [#otel-ruby](https://cloud-native.slack.com/archives/C01NWKKMKMY)
-- GitHub Discussions: https://github.com/open-telemetry/opentelemetry-ruby-instrumentation/discussions
-- Maintainers: [@kaylareopelle](https://github.com/kaylareopelle), [@xuan-cao-swi](https://github.com/xuan-cao-swi)
+- Maintainers: [open-telemetry/ruby-instrumentation-approvers](https://github.com/orgs/open-telemetry/teams/ruby-instrumentation-approvers)
