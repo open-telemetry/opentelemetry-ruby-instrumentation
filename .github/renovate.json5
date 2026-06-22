@@ -20,7 +20,7 @@
         'patch',
       ],
       schedule: [
-        'before 6am every weekday',
+        'before 6am on Monday',
       ],
     },
     {
@@ -32,7 +32,7 @@
         'digest',
       ],
       schedule: [
-        'before 6am every weekday',
+        'before 6am on Monday',
       ],
     },
     {
@@ -44,7 +44,7 @@
         'patch',
       ],
       schedule: [
-        'before 6am every weekday',
+        'before 6am on Monday',
       ],
     },
     {
@@ -97,7 +97,7 @@
         'ruby/setup-ruby',
       ],
       schedule: [
-        'before 6am every weekday',
+        'before 6am on Monday',
       ],
       prConcurrentLimit: 0,
       automerge: true,
