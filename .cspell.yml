@@ -58,9 +58,10 @@ dictionaries:
   - softwareTerms
   - software-tools
 ignoreWords:
-  - millis
-  - Dockerfiles
   - autodiscover
+  - davidanson
+  - Dockerfiles
+  - millis
 words:
   - enqueuers
   - opentelemetry
