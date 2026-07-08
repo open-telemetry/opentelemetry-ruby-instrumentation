@@ -9,6 +9,8 @@ permissions:
 
 jobs:
   stale:
+    if: ${{ github.repository == 'open-telemetry/opentelemetry-ruby-instrumentation' }}
+
     permissions:
       issues: write # required for labeling and closing stale issues
       pull-requests: write # required for labeling and closing stale PRs
