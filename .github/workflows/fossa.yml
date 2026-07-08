@@ -22,7 +22,7 @@ jobs:
           ruby-version: "4.0.5"
           bundler-cache: true
 
-      - uses: fossas/fossa-action@ff70fe9fe17cbd2040648f1c45e8ec4e4884dcf3 # v1.9.0
+      - uses: fossas/fossa-action@29693cc50323968e039056be419b32989fc5880c # v2.0.0
         with:
           api-key: ${{ secrets.FOSSA_API_KEY }}
           team: OpenTelemetry
