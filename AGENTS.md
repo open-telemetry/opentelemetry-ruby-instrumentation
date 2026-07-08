@@ -83,6 +83,7 @@ Do not manually push gems or tag releases — always go through the workflow.
 ## Dependency Updates (Renovate)
 
 Renovate runs on a weekly schedule:
+
 - **Patch/digest updates:** before 6am on Monday
 - **Minor updates:** before 7am on Monday
 - **Major updates:** before 8am on Monday
