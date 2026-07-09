@@ -17,3 +17,6 @@
 
 tags
 !**/*/.gitkeep
+
+# Vendored gems
+**/vendor/**/*
