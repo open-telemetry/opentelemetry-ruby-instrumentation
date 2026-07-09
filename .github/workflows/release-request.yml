@@ -37,7 +37,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.OTELBOT_RUBY_INSTRUMENTATION_CLIENT_ID }}
-          private-key: ${{ secrets.PR_DASHBOARD_PRIVATE_KEY }}
+          private-key: ${{ secrets.OTELBOT_RUBY_INSTRUMENTATION_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
           permission-pull-requests: write
