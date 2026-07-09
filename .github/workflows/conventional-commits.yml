@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   validate-commits:
+    if: ${{ github.repository == 'open-telemetry/opentelemetry-ruby-instrumentation' && github.event_name == 'pull_request' }}
     name: Conventional Commits Validation
     runs-on: ubuntu-24.04
     steps:
@@ -27,7 +28,6 @@ jobs:
           persist-credentials: false
       # restrict checks to pull requests to avoid issues blocking the merge queue
       - name: Validate PR Title
-        if: ${{ github.event_name == 'pull_request' }}
         uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         id: lint_pr_title
         env:
