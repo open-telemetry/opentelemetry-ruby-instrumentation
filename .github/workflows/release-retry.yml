@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   release-retry:
+    if: ${{ github.repository == 'open-telemetry/opentelemetry-ruby-instrumentation' }}
     permissions:
       contents: write # required for creating releases
       pull-requests: write # required for updating label on PR, posting comments
