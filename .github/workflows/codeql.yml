@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   analyze:
+    if: ${{ github.repository == 'open-telemetry/opentelemetry-ruby-instrumentation' }}
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     permissions:
