@@ -41,6 +41,11 @@ jobs:
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
           permission-pull-requests: write
+      
+      - name: Debug git status
+        run: |
+          git status
+          git diff
 
       - name: Open release pull request
         env:
