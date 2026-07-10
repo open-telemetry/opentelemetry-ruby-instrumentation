@@ -120,6 +120,16 @@ module OTelBundlerPatch
       warn "[OpenTelemetry] WARNING: Unable to check Gemfile for OpenTelemetry gems: #{e.message}" if ENV['OTEL_RUBY_AUTO_INSTRUMENTATION_DEBUG'] == 'true'
     end
 
+    # Installs instrumentation against the registry.
+    def self._otel_install_instrumentation(enabled_names)
+      registry = ::OpenTelemetry::Instrumentation.registry
+      if enabled_names.empty?
+        registry.install_all
+      else
+        registry.install(enabled_names)
+      end
+    end
+
     # Initializes the OpenTelemetry SDK exactly once using a mutex-protected check.
     def self._otel_require_otel
       @_otel_mutex.synchronize do
@@ -135,16 +145,14 @@ module OTelBundlerPatch
           resource = _otel_detect_resource_from_env
           resource = resource.merge(_otel_distro_resource)
 
+          # Configure providers, exporters, propagation, and resource. Instrumentation
+          # install is driven separately below, keeping SDK setup and instrumentation
+          # install decoupled.
           OpenTelemetry::SDK.configure do |c|
             c.resource = resource
-            if required_instrumentation.empty?
-              c.use_all
-            else
-              required_instrumentation.each do |instrumentation|
-                c.use instrumentation
-              end
-            end
           end
+
+          _otel_install_instrumentation(required_instrumentation)
 
           OpenTelemetry.logger.info { 'Auto-instrumentation initialized' }
         rescue StandardError => e
