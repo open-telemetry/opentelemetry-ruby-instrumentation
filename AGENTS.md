@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This repository contains the `opentelemetry-auto-instrumentation` Ruby gem, which provides automatic zero-code instrumentation for Ruby applications by patching `Bundler::Runtime#require` to inject OpenTelemetry SDK initialization when gems are loaded.
+This repository contains the `opentelemetry-auto-instrumentation` Ruby gem, which provides automatic zero-code instrumentation for Ruby applications. It configures the OpenTelemetry SDK and installs per-library instrumentation lazily via a `TracePoint(:end)` as each library's classes are defined, with an initial sweep for libraries already loaded at startup.
 
 **Key exported signals:** traces, metrics, and logs — all exported via OTLP to `http://localhost:4318` by default.
 
@@ -32,7 +32,7 @@ For new features and behavior changes, unless the task says otherwise:
 ## Repository Structure
 
 ```console
-lib/opentelemetry-auto-instrumentation.rb   # Main gem entry point; contains OTelBundlerPatch
+lib/opentelemetry-auto-instrumentation.rb   # Main gem entry point; contains OTelInitializer
 lib/opentelemetry/auto_instrumentation/
   version.rb                                # Gem version
 test/
@@ -95,7 +95,6 @@ Ruby version updates in gemspecs and Dockerfile require dashboard approval (`dep
 
 | Variable | Purpose |
 | --- | --- |
-| `OTEL_RUBY_REQUIRE_BUNDLER` | Set `true` for frameworks that don't auto-call `Bundler.require` (e.g., Sinatra) |
 | `OTEL_RUBY_ENABLED_INSTRUMENTATIONS` | Comma-separated list to load only specific instrumentations |
 | `OTEL_RUBY_RESOURCE_DETECTORS` | Enable resource detectors: `container`, `azure`, `aws` |
 | `OTEL_RUBY_ADDITIONAL_GEM_PATH` | Custom gem path for OpenTelemetry Operator environments |

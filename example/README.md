@@ -18,15 +18,14 @@ A basic Ruby application that demonstrates opentelemetry-auto-instrumentation.
 
 ```bash
 bundle install
-OTEL_RUBY_REQUIRE_BUNDLER=true OTEL_TRACES_EXPORTER=console RUBYOPT="-r opentelemetry-auto-instrumentation" ruby app.rb
+OTEL_TRACES_EXPORTER=console RUBYOPT="-r opentelemetry-auto-instrumentation" ruby app.rb
 ```
 
 To also export metrics and logs to the console:
 
 ```bash
 bundle install
-OTEL_RUBY_REQUIRE_BUNDLER=true \
-  OTEL_TRACES_EXPORTER=console \
+OTEL_TRACES_EXPORTER=console \
   OTEL_METRICS_EXPORTER=console \
   OTEL_LOGS_EXPORTER=console \
   RUBYOPT="-r opentelemetry-auto-instrumentation" ruby app.rb
@@ -34,7 +33,6 @@ OTEL_RUBY_REQUIRE_BUNDLER=true \
 
 **What's happening:**
 
-- `OTEL_RUBY_REQUIRE_BUNDLER=true` tells the gem to call `Bundler.require` during initialization
 - `OTEL_TRACES_EXPORTER=console` outputs trace data to the console for visibility
 - `OTEL_METRICS_EXPORTER=console` outputs metrics data to the console
 - `OTEL_LOGS_EXPORTER=console` outputs log records to the console
@@ -54,15 +52,14 @@ bundle exec rackup config.ru
 
 ```bash
 bundle install
-OTEL_RUBY_REQUIRE_BUNDLER=false OTEL_TRACES_EXPORTER=console RUBYOPT="-r opentelemetry-auto-instrumentation" bundle exec rackup config.ru
+OTEL_TRACES_EXPORTER=console RUBYOPT="-r opentelemetry-auto-instrumentation" bundle exec rackup config.ru
 ```
 
 To also export metrics and logs:
 
 ```bash
 bundle install
-OTEL_RUBY_REQUIRE_BUNDLER=false \
-  OTEL_TRACES_EXPORTER=console \
+OTEL_TRACES_EXPORTER=console \
   OTEL_METRICS_EXPORTER=console \
   OTEL_METRIC_EXPORT_INTERVAL=5000 \
   OTEL_LOGS_EXPORTER=console \
@@ -73,16 +70,14 @@ To send all signals to an OTLP collector:
 
 ```bash
 bundle install
-OTEL_RUBY_REQUIRE_BUNDLER=false \
-  OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318" \
+OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318" \
   OTEL_SERVICE_NAME="my-rails-app" \
   RUBYOPT="-r opentelemetry-auto-instrumentation" bundle exec rackup config.ru
 ```
 
 **What's happening:**
 
-- `OTEL_RUBY_REQUIRE_BUNDLER=false` because Rails automatically calls `Bundler.require` during boot
-- The OpenTelemetry gem is loaded first via `RUBYOPT`, then Rails initializes with instrumentation automatically applied
+- The OpenTelemetry gem is loaded first via `RUBYOPT`, then Rails boots with instrumentation installed automatically as libraries load
 - When no exporter env vars are set, traces, metrics, and logs default to the OTLP exporter sending to `http://localhost:4318`
 
 ### Test the instrumentation
@@ -97,13 +92,13 @@ You should see trace output in the console where the Rails server is running.
 
 ### Load sequence
 
-The correct sequence is:
+The sequence is:
 
 1. `opentelemetry-auto-instrumentation` is loaded (via `RUBYOPT`)
-2. User libraries are required
-3. `Bundler.require` is called (by Rails or manually)
-4. OpenTelemetry SDK is initialized
-5. Instrumentation is installed for loaded libraries
+2. The OpenTelemetry SDK is configured and a `TracePoint(:end)` installer is enabled
+3. An initial sweep installs instrumentation for libraries already loaded
+4. The application boots and requires its libraries
+5. Instrumentation is installed for each library as its classes are defined
 
 ### Troubleshooting: Default Gem Version Conflicts
 

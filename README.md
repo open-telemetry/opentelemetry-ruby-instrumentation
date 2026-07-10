@@ -32,16 +32,11 @@ Then instrument any Ruby application:
 RUBYOPT="-r opentelemetry-auto-instrumentation" ruby application.rb
 ```
 
-For Rails (which calls `Bundler.require` automatically):
+The same command works across frameworks, including Rails, Sinatra, and rackup:
 
 ```console
 RUBYOPT="-r opentelemetry-auto-instrumentation" rails server
-```
-
-For other frameworks (Sinatra, Rackup, etc.) that don't call `Bundler.require` automatically:
-
-```console
-OTEL_RUBY_REQUIRE_BUNDLER=true RUBYOPT="-r opentelemetry-auto-instrumentation" rackup config.ru
+RUBYOPT="-r opentelemetry-auto-instrumentation" rackup config.ru
 ```
 
 ### What gets installed?
@@ -166,7 +161,6 @@ The following environment variables are specific to this gem (not standard OpenT
 
 | Environment Variable | Description | Example |
 | -------------------- | ----------- | ------- |
-| `OTEL_RUBY_REQUIRE_BUNDLER` | Set to `true` to automatically call `Bundler.require` during initialization. Required for frameworks that don't call it automatically (e.g., Sinatra). | `true` |
 | `OTEL_RUBY_RESOURCE_DETECTORS` | Comma-separated list of resource detectors. Supported: `container`, `azure`, `aws`. | `container,azure,aws` |
 | `OTEL_RUBY_ENABLED_INSTRUMENTATIONS` | Only load specific instrumentations (comma-separated). Omit to load all available. | `redis,mysql2,faraday` |
 | `OTEL_RUBY_ADDITIONAL_GEM_PATH` | Custom gem installation path for OpenTelemetry Operator environments. | `/custom/gem/path` |
@@ -203,11 +197,11 @@ For a complete list, refer to the SDK READMEs: [opentelemetry-sdk (traces)][otel
 
 ### How Auto-Instrumentation Works
 
-The gem patches `Bundler::Runtime#require` to inject OpenTelemetry initialization when gems are loaded. Rails calls `Bundler.require` automatically during boot; other frameworks need `OTEL_RUBY_REQUIRE_BUNDLER=true`.
+The gem configures the OpenTelemetry SDK, then enables a `TracePoint(:end)` that installs each library's instrumentation as soon as the library's classes finish being defined. An initial sweep installs instrumentation for libraries already loaded at startup.
 
 ### Instrumentation Timing Issues
 
-Instrumentation is only applied to libraries loaded through `Bundler.require`. If you require a library after `Bundler.require` has already been called, it won't be instrumented. Preload it via `RUBYOPT` instead:
+Because instrumentation is installed as libraries load, a library required after startup is still instrumented. Preloading a library via `RUBYOPT` is only needed for the rare library that must be patched before its first use:
 
 ```console
 RUBYOPT="-r faraday -r opentelemetry-auto-instrumentation" ruby application.rb
