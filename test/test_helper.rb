@@ -79,7 +79,7 @@ def run_in_subprocess(env_vars = {}, opts = {})
         end
         $VERBOSE = old_verbose
 
-        OTelBundlerPatch::OTelInitializer._otel_check_for_bundled_otel_gems
+        OTelInitializer._otel_check_for_bundled_otel_gems
       # Branch 2: Signal data inspection
       # it attaches in-memory exporters to the already-configured providers
       # and exercises them with real data.
