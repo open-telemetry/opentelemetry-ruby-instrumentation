@@ -16,7 +16,11 @@ require 'net/http'
 # each test starts from a clean Ruby process with no previously loaded constants,
 # initialized providers, or mutated global state.
 #
-# Three mutually-exclusive execution branches exist to cover distinct scenarios:
+# Loading the gem configures the SDK and enables the TracePoint installer, which
+# installs instrumentation for already-loaded libraries immediately and for
+# later-loaded ones as their classes are defined.
+#
+# Four mutually-exclusive execution branches exist to cover distinct scenarios:
 #
 # Branch 1 – Bundler warning simulation (dep_names: or raise_error: opts)
 #   Simulates what happens when the user's Gemfile contains OpenTelemetry gems, or
@@ -30,11 +34,16 @@ require 'net/http'
 #   (traces, metrics, logs), exercises each signal, and returns the captured data
 #   so tests can assert on specific span names, counter values, and log bodies.
 #
-# Branch 3 – Default provider class verification (no special opts)
-#   Simulates normal application startup. Loads the auto-instrumentation and
-#   calls Bundler.require, then returns provider class names, resource attributes,
-#   and the list of installed instrumentation so tests can assert the SDK wired
-#   up the correct implementation classes.
+# Branch 3 – Late-loading via TracePoint (late_load: true opt)
+#   Registers a fake instrumentation after the installer is enabled, whose present?
+#   flips only once a sentinel class is defined. Defining that class fires
+#   TracePoint(:end), which must run the sweep and install it. Returns installed?
+#   before and after so the test can assert late-loaded libraries get instrumented.
+#
+# Branch 4 – Default provider class verification (no special opts)
+#   Simulates normal application startup. Returns provider class names, resource
+#   attributes, and the list of installed instrumentation so tests can assert the
+#   SDK wired up the correct implementation classes.
 def run_in_subprocess(env_vars = {}, opts = {})
   skip 'fork is not available on this platform' unless Process.respond_to?(:fork)
 
@@ -47,7 +56,6 @@ def run_in_subprocess(env_vars = {}, opts = {})
     SimpleCov.command_name "subprocess-#{Process.pid}"
     read_pipe.close
     env_vars.each { |key, value| ENV[key] = value }
-    ENV['OTEL_RUBY_REQUIRE_BUNDLER'] = 'false'
 
     begin
       load auto_instrumentation_path
@@ -84,8 +92,6 @@ def run_in_subprocess(env_vars = {}, opts = {})
       # it attaches in-memory exporters to the already-configured providers
       # and exercises them with real data.
       elsif opts[:inspect_signals]
-        Bundler.require
-
         # --- Traces ---
         span_exporter = OpenTelemetry::SDK::Trace::Export::InMemorySpanExporter.new
         span_processor = OpenTelemetry::SDK::Trace::Export::SimpleSpanProcessor.new(span_exporter)
@@ -119,10 +125,22 @@ def run_in_subprocess(env_vars = {}, opts = {})
         result[:logs] = log_exporter.emitted_log_records.map do |lr|
           { body: lr.body, severity_text: lr.severity_text }
         end
-      # Branch 3: Default provider class verification
-      else
-        Bundler.require
+      # Branch 3: Late-loading via TracePoint
+      elsif opts[:late_load]
+        # A fake instrumentation registered after the installer is enabled. present?
+        # returns true only once OTelLateLoadSentinel exists, so the initial sweep
+        # skips it. Defining that class fires TracePoint(:end), whose sweep must then
+        # install it.
+        Object.const_set(:OTelLateLoadInstrumentation, Class.new(OpenTelemetry::Instrumentation::Base) do
+          present { defined?(OTelLateLoadSentinel) ? true : false }
+          install { |_| true }
+        end)
 
+        result[:installed_before] = OTelLateLoadInstrumentation.instance.installed?
+        eval 'class OTelLateLoadSentinel; end', TOPLEVEL_BINDING, __FILE__, __LINE__
+        result[:installed_after] = OTelLateLoadInstrumentation.instance.installed?
+      # Branch 4: Default provider class verification
+      else
         tracer_provider = OpenTelemetry.tracer_provider
         resource = tracer_provider.instance_variable_get(:@resource)
         resource_attributes = resource.instance_variable_get(:@attributes)
