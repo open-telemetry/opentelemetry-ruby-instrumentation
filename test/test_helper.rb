@@ -20,7 +20,7 @@ require 'net/http'
 # installs instrumentation for already-loaded libraries immediately and for
 # later-loaded ones as their classes are defined.
 #
-# Four mutually-exclusive execution branches exist to cover distinct scenarios:
+# Five mutually-exclusive execution branches exist to cover distinct scenarios:
 #
 # Branch 1 – Bundler warning simulation (dep_names: or raise_error: opts)
 #   Simulates what happens when the user's Gemfile contains OpenTelemetry gems, or
@@ -40,7 +40,12 @@ require 'net/http'
 #   TracePoint(:end), which must run the sweep and install it. Returns installed?
 #   before and after so the test can assert late-loaded libraries get instrumented.
 #
-# Branch 4 – Default provider class verification (no special opts)
+# Branch 4 – Repeated install attempts (install_attempts: true opt)
+#   Registers a fake instrumentation that is present but can never install, then fires
+#   the TracePoint several times. Returns how many install attempts it received so the
+#   test can assert an uninstallable instrumentation is retried at most once.
+#
+# Branch 5 – Default provider class verification (no special opts)
 #   Simulates normal application startup. Returns provider class names, resource
 #   attributes, and the list of installed instrumentation so tests can assert the
 #   SDK wired up the correct implementation classes.
@@ -139,20 +144,40 @@ def run_in_subprocess(env_vars = {}, opts = {})
         result[:installed_before] = OTelLateLoadInstrumentation.instance.installed?
         eval 'class OTelLateLoadSentinel; end', TOPLEVEL_BINDING, __FILE__, __LINE__
         result[:installed_after] = OTelLateLoadInstrumentation.instance.installed?
-      # Branch 4: Default provider class verification
+      # Branch 4: Repeated install attempts
+      elsif opts[:install_attempts]
+        # A fake instrumentation whose library is present but which can never install
+        # (incompatible). compatible? counts each install attempt. Defining classes
+        # fires the TracePoint repeatedly; the installer must attempt it at most once,
+        # not on every fire.
+        attempts = 0
+        Object.const_set(:OTelProbeInstrumentation, Class.new(OpenTelemetry::Instrumentation::Base) do
+          present { true }
+          compatible do
+            attempts += 1
+            false
+          end
+          install { |_| true }
+        end)
+
+        3.times { eval 'class OTelProbeTrigger; end', TOPLEVEL_BINDING, __FILE__, __LINE__ }
+        result[:install_attempts] = attempts
+      # Branch 5: Default provider class verification
       else
         tracer_provider = OpenTelemetry.tracer_provider
         resource = tracer_provider.instance_variable_get(:@resource)
         resource_attributes = resource.instance_variable_get(:@attributes)
         registry = tracer_provider.instance_variable_get(:@registry)
         instrumentation_names = registry.map { |entry| entry.first.name }
+        trace_point = OTelInitializer.instance_variable_get(:@_otel_trace_point)
 
         result.merge!(
           tracer_provider_class: tracer_provider.class.name,
           meter_provider_class: OpenTelemetry.meter_provider.class.name,
           logger_provider_class: OpenTelemetry.logger_provider.class.name,
           resource_attributes: resource_attributes,
-          instrumentation_names: instrumentation_names
+          instrumentation_names: instrumentation_names,
+          trace_point_enabled: trace_point ? trace_point.enabled? : false
         )
       end
 
