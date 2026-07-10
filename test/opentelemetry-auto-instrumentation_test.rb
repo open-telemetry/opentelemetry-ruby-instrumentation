@@ -68,6 +68,35 @@ describe 'OpenTelemetry::AutoInstrumentation' do
     end
   end
 
+  describe 'TracePoint lifecycle' do
+    # Verifies the installer keeps the TracePoint enabled while uninstalled instrumentation
+    # remains.
+    it 'keeps the TracePoint enabled while instrumentation may still install' do
+      result = run_in_subprocess
+
+      _(result[:error]).must_be_nil
+      _(result[:trace_point_enabled]).must_equal true
+    end
+
+    # Verifies the installer disables the TracePoint once every requested instrumentation
+    # is installed.
+    it 'disables the TracePoint once all requested instrumentation is installed' do
+      result = run_in_subprocess('OTEL_RUBY_ENABLED_INSTRUMENTATIONS' => 'net_http')
+
+      _(result[:error]).must_be_nil
+      _(result[:trace_point_enabled]).must_equal false
+    end
+
+    # Verifies a present instrumentation that cannot install is attempted at most once,
+    # rather than on every TracePoint fire.
+    it 'attempts a present but uninstallable instrumentation only once' do
+      result = run_in_subprocess({}, install_attempts: true)
+
+      _(result[:error]).must_be_nil
+      _(result[:install_attempts]).must_equal 1
+    end
+  end
+
   describe 'metrics and logs sdk' do
     # Verifies that opentelemetry-metrics-sdk is loaded and the global meter_provider
     # is replaced with the full SDK implementation rather than the no-op default.
