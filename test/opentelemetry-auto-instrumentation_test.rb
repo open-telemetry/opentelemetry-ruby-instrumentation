@@ -13,7 +13,6 @@ describe 'OpenTelemetry::AutoInstrumentation' do
     ENV['OTEL_RUBY_ENABLED_INSTRUMENTATIONS'] = nil
     ENV['OTEL_RUBY_INSTRUMENTATION_NET_HTTP_ENABLED'] = nil
     ENV['OTEL_RUBY_RESOURCE_DETECTORS'] = nil
-    ENV['OTEL_RUBY_REQUIRE_BUNDLER'] = nil
     ENV['OTEL_RUBY_AUTO_INSTRUMENTATION_DEBUG'] = nil
   end
 
@@ -53,6 +52,20 @@ describe 'OpenTelemetry::AutoInstrumentation' do
     _(result[:error]).must_be_nil
     _(result[:instrumentation_names]).must_include 'OpenTelemetry::Instrumentation::Net::HTTP'
     _(result[:instrumentation_names]).wont_include 'OpenTelemetry::Instrumentation::Rake'
+  end
+
+  describe 'lazy instrumentation loading' do
+    # Verifies the TracePoint installer instruments a library that becomes present
+    # only after the gem loads. A fake instrumentation registered once the installer
+    # is enabled is skipped by the initial sweep, then installs as soon as its target
+    # class is defined.
+    it 'installs instrumentation for late-loaded libraries' do
+      result = run_in_subprocess({}, late_load: true)
+
+      _(result[:error]).must_be_nil
+      _(result[:installed_before]).must_equal false
+      _(result[:installed_after]).must_equal true
+    end
   end
 
   describe 'metrics and logs sdk' do
