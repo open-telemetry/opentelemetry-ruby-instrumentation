@@ -15,8 +15,6 @@ jobs:
       contents: write # required for updating releases
       pull-requests: write # required for updating release PRs
     runs-on: ubuntu-24.04
-    env:
-      BUNDLE_GEMFILE: ${{ github.workspace }}/.toys/release/Gemfile
     steps:
       - name: Checkout repo
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -25,11 +23,13 @@ jobs:
         uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9 # v1.316.0
         with:
           ruby-version: "4.0.5"
-          bundler-cache: true
+
+      - name: Install Toys
+        run: gem install --no-document toys:0.22.0 toys-release:0.9.1
 
       - name: Update open releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          bundle exec toys release _onpush --verbose \
+          toys release _onpush --verbose \
             < /dev/null
