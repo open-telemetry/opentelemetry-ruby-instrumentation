@@ -15,17 +15,19 @@ jobs:
       pull-requests: write # required for updating release PRs
       issues: write # required to create issues for failed releases
     runs-on: ubuntu-24.04
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/.toys/release/Gemfile
     steps:
       - name: Checkout repo
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Install Ruby
         uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9 # v1.316.0
         with:
           ruby-version: "4.0.5"
-
-      - name: Install Toys
-        run: gem install --no-document toys:0.22.0 toys-release:0.9.1
+          bundler-cache: true
 
       - name: Process release request
         env:
@@ -33,6 +35,6 @@ jobs:
           GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
           EVENT_PATH: ${{ github.event_path }}
         run: |
-          toys release _onclosed --verbose \
+          bundle exec toys release _onclosed --verbose \
             "--event-path=$EVENT_PATH" \
             < /dev/null
