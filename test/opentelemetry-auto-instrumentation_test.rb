@@ -13,7 +13,6 @@ describe 'OpenTelemetry::AutoInstrumentation' do
     ENV['OTEL_RUBY_ENABLED_INSTRUMENTATIONS'] = nil
     ENV['OTEL_RUBY_INSTRUMENTATION_NET_HTTP_ENABLED'] = nil
     ENV['OTEL_RUBY_RESOURCE_DETECTORS'] = nil
-    ENV['OTEL_RUBY_REQUIRE_BUNDLER'] = nil
     ENV['OTEL_RUBY_AUTO_INSTRUMENTATION_DEBUG'] = nil
   end
 
@@ -53,6 +52,49 @@ describe 'OpenTelemetry::AutoInstrumentation' do
     _(result[:error]).must_be_nil
     _(result[:instrumentation_names]).must_include 'OpenTelemetry::Instrumentation::Net::HTTP'
     _(result[:instrumentation_names]).wont_include 'OpenTelemetry::Instrumentation::Rake'
+  end
+
+  describe 'lazy instrumentation loading' do
+    # Verifies the TracePoint installer instruments a library that becomes present
+    # only after the gem loads. A fake instrumentation registered once the installer
+    # is enabled is skipped by the initial sweep, then installs as soon as its target
+    # class is defined.
+    it 'installs instrumentation for late-loaded libraries' do
+      result = run_in_subprocess({}, late_load: true)
+
+      _(result[:error]).must_be_nil
+      _(result[:installed_before]).must_equal false
+      _(result[:installed_after]).must_equal true
+    end
+  end
+
+  describe 'TracePoint lifecycle' do
+    # Verifies the installer keeps the TracePoint enabled while uninstalled instrumentation
+    # remains.
+    it 'keeps the TracePoint enabled while instrumentation may still install' do
+      result = run_in_subprocess
+
+      _(result[:error]).must_be_nil
+      _(result[:trace_point_enabled]).must_equal true
+    end
+
+    # Verifies the installer disables the TracePoint once every requested instrumentation
+    # is installed.
+    it 'disables the TracePoint once all requested instrumentation is installed' do
+      result = run_in_subprocess('OTEL_RUBY_ENABLED_INSTRUMENTATIONS' => 'net_http')
+
+      _(result[:error]).must_be_nil
+      _(result[:trace_point_enabled]).must_equal false
+    end
+
+    # Verifies a present instrumentation that cannot install is attempted at most once,
+    # rather than on every TracePoint fire.
+    it 'attempts a present but uninstallable instrumentation only once' do
+      result = run_in_subprocess({}, install_attempts: true)
+
+      _(result[:error]).must_be_nil
+      _(result[:install_attempts]).must_equal 1
+    end
   end
 
   describe 'metrics and logs sdk' do
