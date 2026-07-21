@@ -20,7 +20,7 @@ jobs:
       - name: Install Ruby
         uses: ruby/setup-ruby@a30dfa457ad68707b8b910ac3a244714b61c0626 # v1.320.0
         with:
-          ruby-version: "4.0.5"
+          ruby-version: "4.0.6"
           bundler-cache: true
 
       - uses: fossas/fossa-action@29693cc50323968e039056be419b32989fc5880c # v2.0.0

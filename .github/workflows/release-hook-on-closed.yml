@@ -22,7 +22,7 @@ jobs:
       - name: Install Ruby
         uses: ruby/setup-ruby@a30dfa457ad68707b8b910ac3a244714b61c0626 # v1.320.0
         with:
-          ruby-version: "4.0.5"
+          ruby-version: "4.0.6"
 
       - name: Install Toys
         run: gem install --no-document toys:0.22.0 toys-release:0.9.1
