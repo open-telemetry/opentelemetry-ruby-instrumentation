@@ -151,7 +151,7 @@ def run_in_subprocess(env_vars = {}, opts = {})
       write_pipe.close
 
       # Store the simplecov result for this process
-      SimpleCov::ResultMerger.store_result(SimpleCov::Result.new(Coverage.result))
+      SimpleCov::ResultMerger.store_result(SimpleCov::Result.new(Coverage.result)) if Coverage.running?
       exit!(0)
     end
   end
