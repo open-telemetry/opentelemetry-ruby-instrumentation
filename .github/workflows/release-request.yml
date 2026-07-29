@@ -38,7 +38,9 @@ jobs:
           private-key: ${{ secrets.OTELBOT_RUBY_INSTRUMENTATION_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
+          permission-issues: write
           permission-pull-requests: write
+          permission-workflows: write
 
       - name: Open release pull request
         env:
