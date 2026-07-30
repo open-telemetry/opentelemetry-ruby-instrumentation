@@ -20,7 +20,7 @@ require 'net/http'
 # installs instrumentation for already-loaded libraries immediately and for
 # later-loaded ones as their classes are defined.
 #
-# Five mutually-exclusive execution branches exist to cover distinct scenarios:
+# Six mutually-exclusive execution branches exist to cover distinct scenarios:
 #
 # Branch 1 – Bundler warning simulation (dep_names: or raise_error: opts)
 #   Simulates what happens when the user's Gemfile contains OpenTelemetry gems, or
@@ -40,15 +40,22 @@ require 'net/http'
 #   TracePoint(:end), which must run the sweep and install it. Returns installed?
 #   before and after so the test can assert late-loaded libraries get instrumented.
 #
-# Branch 4 – Repeated install attempts (install_attempts: true opt)
-#   Registers a fake instrumentation that is present but can never install, then fires
-#   the TracePoint several times. Returns how many install attempts it received so the
-#   test can assert an uninstallable instrumentation is retried at most once.
+# Branch 4 – Incompatible instrumentation never submitted (incompatible_never_submitted: true opt)
+#   Registers a fake instrumentation that is present but reports incompatible, wraps
+#   registry.install to record submissions, then fires the TracePoint several times.
+#   Returns whether it was ever submitted and whether it installed, so the test can
+#   assert an incompatible instrumentation is never handed to the registry.
 #
 # Branch 5 – Default provider class verification (no special opts)
 #   Simulates normal application startup. Returns provider class names, resource
 #   attributes, and the list of installed instrumentation so tests can assert the
 #   SDK wired up the correct implementation classes.
+#
+# Branch 6 – Half-loaded library (half_loaded: true opt)
+#   Registers a fake instrumentation whose compatible? raises until a sentinel class
+#   is defined, mirroring a library read mid-require. Returns installed? before and
+#   after defining the sentinel, plus whether the TracePoint stayed enabled, so the
+#   test can assert a raise is treated as "retry later" rather than a permanent verdict.
 def run_in_subprocess(env_vars = {}, opts = {})
   skip 'fork is not available on this platform' unless Process.respond_to?(:fork)
 
@@ -144,24 +151,49 @@ def run_in_subprocess(env_vars = {}, opts = {})
         result[:installed_before] = OTelLateLoadInstrumentation.instance.installed?
         eval 'class OTelLateLoadSentinel; end', TOPLEVEL_BINDING, __FILE__, __LINE__
         result[:installed_after] = OTelLateLoadInstrumentation.instance.installed?
-      # Branch 4: Repeated install attempts
-      elsif opts[:install_attempts]
-        # A fake instrumentation whose library is present but which can never install
-        # (incompatible). compatible? counts each install attempt. Defining classes
-        # fires the TracePoint repeatedly; the installer must attempt it at most once,
-        # not on every fire.
-        attempts = 0
-        Object.const_set(:OTelProbeInstrumentation, Class.new(OpenTelemetry::Instrumentation::Base) do
+      # Branch 4: Incompatible instrumentation is never submitted
+      elsif opts[:incompatible_never_submitted]
+        # A fake instrumentation whose library is present but which reports incompatible.
+        # Defining classes fires the TracePoint repeatedly; the recorded submissions must
+        # never include it, and it must never install.
+        submitted = []
+        registry = OpenTelemetry::Instrumentation.registry
+        original_install = registry.method(:install)
+        registry.define_singleton_method(:install) do |names, *rest|
+          submitted.concat(Array(names))
+          original_install.call(names, *rest)
+        end
+
+        Object.const_set(:OTelIncompatibleInstrumentation, Class.new(OpenTelemetry::Instrumentation::Base) do
+          present { true }
+          compatible { false }
+          install { |_| true }
+        end)
+
+        3.times { eval 'class OTelIncompatibleTrigger; end', TOPLEVEL_BINDING, __FILE__, __LINE__ }
+        result[:submitted_incompatible] = submitted.include?('OTelIncompatibleInstrumentation')
+        result[:installed] = OTelIncompatibleInstrumentation.instance.installed?
+      # Branch 6: Half-loaded library whose compatibility check raises
+      elsif opts[:half_loaded]
+        # Mirrors a library mid-require: present from the start, but compatible? reads a
+        # version that only exists once a sentinel class is defined and raises before then.
+        # A raise must be read as "not ready yet", so the sweep skips it and it installs on
+        # a later sweep once the sentinel exists.
+        Object.const_set(:OTelHalfLoadedInstrumentation, Class.new(OpenTelemetry::Instrumentation::Base) do
           present { true }
           compatible do
-            attempts += 1
-            false
+            raise NoMethodError, "undefined method 'version' for OTelHalfLoaded" unless defined?(OTelHalfLoadedSentinel)
+
+            true
           end
           install { |_| true }
         end)
 
-        3.times { eval 'class OTelProbeTrigger; end', TOPLEVEL_BINDING, __FILE__, __LINE__ }
-        result[:install_attempts] = attempts
+        result[:installed_before] = OTelHalfLoadedInstrumentation.instance.installed?
+        trace_point = OTelInitializer.instance_variable_get(:@_otel_trace_point)
+        result[:trace_point_enabled] = trace_point ? trace_point.enabled? : false
+        eval 'class OTelHalfLoadedSentinel; end', TOPLEVEL_BINDING, __FILE__, __LINE__
+        result[:installed_after] = OTelHalfLoadedInstrumentation.instance.installed?
       # Branch 5: Default provider class verification
       else
         tracer_provider = OpenTelemetry.tracer_provider
