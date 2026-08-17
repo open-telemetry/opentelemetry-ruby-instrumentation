@@ -58,8 +58,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
+          TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
         run: |
           gh release create "opentelemetry-auto-instrumentation/v${VERSION}" \
             --title "opentelemetry-auto-instrumentation v${VERSION}" \
             --notes-file release-notes.md \
-            --target "${{ github.event.pull_request.base.ref }}"
+            --target "$TARGET_BRANCH"
