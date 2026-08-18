@@ -73,10 +73,10 @@ All tests must pass before opening a pull request.
 
 ## Release Process
 
-Releases are managed via GitHub Actions workflows:
+Releases are managed via GitHub Actions workflows (no `toys`/`toys-release`):
 
-1. **`release-request.yml`** — opens a release PR (`bundle exec toys release request`). Does **not** publish to RubyGems.
-2. **`release-perform.yml`** — performs the actual release and pushes the gem to RubyGems.org using `GEM_HOST_API_KEY` (`RUBYGEMS_API_KEY` secret).
+1. **`release-request.yml`** (`workflow_dispatch` with optional `version`/`changelog` inputs, or a weekly `schedule`) — bumps `lib/opentelemetry/auto_instrumentation/version.rb`, updates `CHANGELOG.md`, and opens a release PR labeled `release`. On the weekly schedule (and on manual runs without inputs), the version bump and changelog are auto-computed from conventional commit messages since the last release tag; the job is skipped if there are no new commits. Does **not** publish to RubyGems.
+2. **`release.yml`** (triggered when a PR labeled `release` is merged) — builds the gem, publishes it to RubyGems.org using `GEM_HOST_API_KEY` (`RUBYGEMS_API_KEY` secret), and creates the GitHub release with the matching changelog notes.
 
 Do not manually push gems or tag releases — always go through the workflow.
 

@@ -200,6 +200,5 @@
   ],
   ignorePaths: [
     '**/example/Gemfile',
-    '.toys/release/Gemfile',
   ],
 }
