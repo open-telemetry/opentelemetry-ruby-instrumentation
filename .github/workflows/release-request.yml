@@ -41,6 +41,8 @@ jobs:
             exit 0
           fi
 
+          # find the most recent release tag, if any, and collect commit
+          # subjects since then, otherwise consider the entire history
           last_tag="$(git tag -l 'opentelemetry-auto-instrumentation/v*' | sort -V | tail -n1)"
           if [ -n "${last_tag}" ]; then
             commits="$(git log "${last_tag}..HEAD" --no-merges --pretty=format:'%s')"
@@ -48,15 +50,18 @@ jobs:
             commits="$(git log --no-merges --pretty=format:'%s')"
           fi
 
+          # skip remaining steps if no new releases (this is for weekly release request)
           if [ -z "${commits}" ]; then
             echo "No commits since ${last_tag:-the beginning of history}; skipping release request."
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
+          # get current gem version
           current_version="$(grep -oE "VERSION = '[0-9]+\.[0-9]+\.[0-9]+'" lib/opentelemetry/auto_instrumentation/version.rb | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
           IFS='.' read -r major minor patch <<< "${current_version}"
 
+          # default to a patch bump unless conventional commits say otherwise
           bump=patch
           if echo "${commits}" | grep -qE '^[a-zA-Z]+(\([^)]*\))?!:|^BREAKING CHANGE'; then
             bump=major
@@ -64,12 +69,14 @@ jobs:
             bump=minor
           fi
 
+          # apply semver bump rules (reset lower components on major/minor bumps)
           case "${bump}" in
             major) major=$((major + 1)); minor=0; patch=0 ;;
             minor) minor=$((minor + 1)); patch=0 ;;
             patch) patch=$((patch + 1)) ;;
           esac
 
+          # publish the computed version for downstream steps
           echo "version=${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
           {
             echo -n "changelog="
@@ -101,16 +108,23 @@ jobs:
           CHANGELOG_ENTRIES: ${{ steps.compute.outputs.changelog }}
         run: |
           {
+            # keep the existing title/blank line at the top of the changelog
             head -n 2 CHANGELOG.md
             echo "## v${VERSION} / $(date +%Y-%m-%d)"
             echo
+
+            # split the "|"-separated changelog entries into an array
             IFS='|' read -ra entries <<< "${CHANGELOG_ENTRIES}"
             for entry in "${entries[@]}"; do
               echo "- $(echo "${entry}" | sed 's/^ *//;s/ *$//')"
             done
             echo
+
+            # re-append the rest of the previous changelog content
             tail -n +3 CHANGELOG.md
           } > CHANGELOG.md.new
+
+          # replace the old changelog file with new one
           mv CHANGELOG.md.new CHANGELOG.md
 
       - name: Push release branch
@@ -134,6 +148,8 @@ jobs:
           VERSION: ${{ steps.compute.outputs.version }}
           TARGET_BRANCH: ${{ github.ref_name }}
         run: |
+          # check whether a release PR from this branch is already open,
+          # if so update the existing PR, otherwise create a new one
           existing_pr="$(gh pr list --state open --head release-request --base "${TARGET_BRANCH}" --json number --jq '.[0].number')"
           if [ -n "${existing_pr}" ]; then
             gh pr edit "${existing_pr}" \

@@ -48,6 +48,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
+          # extract the changelog section for this version, up to the next "## v" heading
           awk -v version="v${VERSION}" '
             $0 ~ "^## " version { flag=1; next }
             /^## v/ { flag=0 }
