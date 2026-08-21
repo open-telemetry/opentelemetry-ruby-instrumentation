@@ -146,7 +146,7 @@ OTEL_RUBY_INSTRUMENTATION_SINATRA_ENABLED=false \
 **Preload gems that need to be instrumented but aren't in your Gemfile:**
 
 ```console
-RUBYOPT="-r faraday -r opentelemetry-auto-instrumentation" ruby application.rb
+RUBYOPT="-r <gem_name> -r opentelemetry-auto-instrumentation" ruby application.rb
 ```
 
 **Using with `bundle exec`** (when the gem is installed outside the bundle):
@@ -198,14 +198,6 @@ For a complete list, refer to the SDK READMEs: [opentelemetry-sdk (traces)][otel
 ### How Auto-Instrumentation Works
 
 The gem configures the OpenTelemetry SDK, then enables a `TracePoint(:end)` that installs each library's instrumentation as soon as the library's classes finish being defined. An initial sweep installs instrumentation for libraries already loaded at startup.
-
-### Instrumentation Timing Issues
-
-Because instrumentation is installed as libraries load, a library required after startup is still instrumented. Preloading a library via `RUBYOPT` is only needed for the rare library that must be patched before its first use:
-
-```console
-RUBYOPT="-r faraday -r opentelemetry-auto-instrumentation" ruby application.rb
-```
 
 ### Dependency Version Conflicts
 

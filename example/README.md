@@ -12,6 +12,8 @@ gem install opentelemetry-auto-instrumentation
 
 This gem should be installed outside your Gemfile so that it can be loaded globally through the `RUBYOPT` environment variable.
 
+> **Note:** `OTEL_RUBY_REQUIRE_BUNDLER` has been removed. Earlier versions required it for frameworks that don't call `Bundler.require` on their own (such as Sinatra). Instrumentation now installs as libraries load, so the variable is no longer needed and setting it has no effect.
+
 ## Simple Example (simple-example)
 
 A basic Ruby application that demonstrates opentelemetry-auto-instrumentation.
