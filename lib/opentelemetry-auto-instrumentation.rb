@@ -145,24 +145,26 @@ module OTelInitializer
     false
   end
 
-  # Installs every relevant instrumentation that is installable right now.
+  # Installs every relevant instrumentation that is installable right now, and returns the
+  # relevant instrumentations.
   def self._otel_sweep(enabled_names)
+    relevant = _otel_relevant_instrumentations(enabled_names)
     @_otel_sweep_mutex.synchronize do
-      ready = _otel_relevant_instrumentations(enabled_names).select do |instrumentation|
-        _otel_ready_to_install?(instrumentation)
-      end
+      ready = relevant.select { |instrumentation| _otel_ready_to_install?(instrumentation) }
       ::OpenTelemetry::Instrumentation.registry.install(ready.map(&:name)) unless ready.empty?
     end
+    relevant
   rescue StandardError => e
     warn "[OpenTelemetry] instrumentation sweep failed: #{e.message}" if ENV['OTEL_RUBY_AUTO_INSTRUMENTATION_DEBUG'] == 'true'
+    relevant || []
   end
 
   # Sweeps once for already-loaded libraries. Unless every relevant instrumentation is
   # already installed, installs a TracePoint(:end) that re-sweeps whenever a class or
   # module finishes being defined, installing instrumentation for libraries as they load.
   def self._otel_start_installer(enabled_names)
-    _otel_sweep(enabled_names)
-    return if _otel_relevant_instrumentations(enabled_names).all?(&:installed?)
+    relevant = _otel_sweep(enabled_names)
+    return if relevant.all?(&:installed?)
 
     @_otel_trace_point = TracePoint.new(:end) do
       _otel_sweep(enabled_names)
