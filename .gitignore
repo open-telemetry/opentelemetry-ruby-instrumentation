@@ -11,6 +11,7 @@
 
 # IDE Settings
 **/.idea/
+.vscode/
 
 # rbenv configuration
 .ruby-version

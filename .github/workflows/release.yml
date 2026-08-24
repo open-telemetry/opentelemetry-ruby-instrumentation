@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: >-
+      ${{ github.repository == 'open-telemetry/opentelemetry-ruby-instrumentation' &&
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'release: pending') }}
+    permissions:
+      contents: write # required for tagging and creating the GitHub release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: "4.0.6"
+          bundler-cache: true
+
+      - name: Determine version
+        id: version
+        run: |
+          version="$(ruby -Ilib -ropentelemetry/auto_instrumentation/version -e 'puts OpenTelemetry::AutoInstrumentation::VERSION')"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Build gem
+        run: gem build opentelemetry-auto-instrumentation.gemspec
+
+      - name: Publish gem to RubyGems
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gem push "opentelemetry-auto-instrumentation-${VERSION}.gem"
+
+      - name: Extract release notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # extract the changelog section for this version, up to the next "## v" heading
+          awk -v version="v${VERSION}" '
+            $0 ~ "^## " version { flag=1; next }
+            /^## v/ { flag=0 }
+            flag { print }
+          ' CHANGELOG.md > release-notes.md
+
+      - name: Create GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+        run: |
+          gh release create "opentelemetry-auto-instrumentation/v${VERSION}" \
+            --title "opentelemetry-auto-instrumentation v${VERSION}" \
+            --notes-file release-notes.md \
+            --target "$TARGET_BRANCH"

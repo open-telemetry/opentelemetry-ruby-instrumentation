@@ -3,10 +3,14 @@ name: Open release request
 on:
   workflow_dispatch:
     inputs:
-      names:
-        description: Components to release (leave blank to release all components)
+      version:
+        description: Version to release (leave blank to auto-bump based on conventional commits)
         required: false
-        default: ""
+      changelog:
+        description: Changelog entries for this release, separated by "|" (leave blank to auto-generate from commits)
+        required: false
+  schedule:
+    - cron: "0 15 * * 2" # weekly, auto-computes version/changelog from conventional commits
 
 permissions:
   contents: read
@@ -15,24 +19,72 @@ jobs:
   release-request:
     if: ${{ github.repository == 'open-telemetry/opentelemetry-ruby-instrumentation' }}
     permissions:
-      contents: write # required for creating releases
-      pull-requests: write # required for creating release PRs
+      contents: write # required for pushing the release branch
+      pull-requests: write # required for creating the release PR
     runs-on: ubuntu-24.04
-    env:
-      BUNDLE_GEMFILE: ${{ github.workspace }}/.toys/release/Gemfile
     steps:
       - name: Checkout repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0 # full history/tags needed to diff commits since the last release
           persist-credentials: false
 
-      - name: Install Ruby
-        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
-        with:
-          ruby-version: "4.0.6"
-          bundler-cache: true
+      - name: Compute release version and changelog
+        id: compute
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+          INPUT_CHANGELOG: ${{ github.event.inputs.changelog }}
+        run: |
+          if [ -n "${INPUT_VERSION}" ]; then
+            echo "version=${INPUT_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "changelog=${INPUT_CHANGELOG}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # find the most recent release tag, if any, and collect commit
+          # subjects since then, otherwise consider the entire history
+          last_tag="$(git tag -l 'opentelemetry-auto-instrumentation/v*' | sort -V | tail -n1)"
+          if [ -n "${last_tag}" ]; then
+            commits="$(git log "${last_tag}..HEAD" --no-merges --pretty=format:'%s')"
+          else
+            commits="$(git log --no-merges --pretty=format:'%s')"
+          fi
+
+          # skip remaining steps if no new releases (this is for weekly release request)
+          if [ -z "${commits}" ]; then
+            echo "No commits since ${last_tag:-the beginning of history}; skipping release request."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # get current gem version
+          current_version="$(grep -oE "VERSION = '[0-9]+\.[0-9]+\.[0-9]+'" lib/opentelemetry/auto_instrumentation/version.rb | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
+          IFS='.' read -r major minor patch <<< "${current_version}"
+
+          # default to a patch bump unless conventional commits say otherwise
+          bump=patch
+          if echo "${commits}" | grep -qE '^[a-zA-Z]+(\([^)]*\))?!:|^BREAKING CHANGE'; then
+            bump=major
+          elif echo "${commits}" | grep -qE '^feat(\([^)]*\))?:'; then
+            bump=minor
+          fi
+
+          # apply semver bump rules (reset lower components on major/minor bumps)
+          case "${bump}" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+
+          # publish the computed version for downstream steps
+          echo "version=${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
+          {
+            echo -n "changelog="
+            echo "${commits}" | paste -sd '|' -
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create otelbot app token
+        if: steps.compute.outputs.skip != 'true'
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: app-token
         with:
@@ -40,17 +92,74 @@ jobs:
           private-key: ${{ secrets.OTELBOT_RUBY_INSTRUMENTATION_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
-          permission-issues: write
           permission-pull-requests: write
-          permission-workflows: write
 
-      - name: Open release pull request
+      - name: Bump gem version
+        if: steps.compute.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.compute.outputs.version }}
+        run: |
+          sed -i "s/VERSION = '.*'/VERSION = '${VERSION}'/" lib/opentelemetry/auto_instrumentation/version.rb
+
+      - name: Update changelog
+        if: steps.compute.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.compute.outputs.version }}
+          CHANGELOG_ENTRIES: ${{ steps.compute.outputs.changelog }}
+        run: |
+          {
+            # keep the existing title/blank line at the top of the changelog
+            head -n 2 CHANGELOG.md
+            echo "## v${VERSION} / $(date +%Y-%m-%d)"
+            echo
+
+            # split the "|"-separated changelog entries into an array
+            IFS='|' read -ra entries <<< "${CHANGELOG_ENTRIES}"
+            for entry in "${entries[@]}"; do
+              echo "- $(echo "${entry}" | sed 's/^ *//;s/ *$//')"
+            done
+            echo
+
+            # re-append the rest of the previous changelog content
+            tail -n +3 CHANGELOG.md
+          } > CHANGELOG.md.new
+
+          # replace the old changelog file with new one
+          mv CHANGELOG.md.new CHANGELOG.md
+
+      - name: Push release branch
+        if: steps.compute.outputs.skip != 'true'
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          TARGET_BRANCH: ${{ github.ref }}
-          RELEASE_NAMES: ${{ github.event.inputs.names }}
+          VERSION: ${{ steps.compute.outputs.version }}
         run: |
-          bundle exec toys release request --yes --verbose \
-            "--target-branch=$TARGET_BRANCH" \
-            $RELEASE_NAMES \
-            < /dev/null
+          git config user.name otelbot
+          git config user.email 197425009+otelbot@users.noreply.github.com
+          # fixed branch name (not per-version) so reruns update it in place instead of piling up PRs
+          git checkout -B release-request
+          git add lib/opentelemetry/auto_instrumentation/version.rb CHANGELOG.md
+          git commit -m "chore(release): v${VERSION}"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" release-request
+
+      - name: Open or update release pull request
+        if: steps.compute.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.compute.outputs.version }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          # check whether a release PR from this branch is already open,
+          # if so update the existing PR, otherwise create a new one
+          existing_pr="$(gh pr list --state open --head release-request --base "${TARGET_BRANCH}" --json number --jq '.[0].number')"
+          if [ -n "${existing_pr}" ]; then
+            gh pr edit "${existing_pr}" \
+              --title "chore(release): v${VERSION}" \
+              --body "Automated release pull request for v${VERSION}."
+          else
+            gh pr create \
+              --title "chore(release): v${VERSION}" \
+              --body "Automated release pull request for v${VERSION}." \
+              --label "release: pending" \
+              --base "${TARGET_BRANCH}" \
+              --head release-request
+          fi
