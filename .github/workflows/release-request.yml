@@ -108,8 +108,10 @@ jobs:
           CHANGELOG_ENTRIES: ${{ steps.compute.outputs.changelog }}
         run: |
           {
-            # keep the existing title/blank line at the top of the changelog
-            head -n 2 CHANGELOG.md
+            # keep the existing title at the top of the changelog
+            head -n 1 CHANGELOG.md
+            echo
+
             echo "## v${VERSION} / $(date +%Y-%m-%d)"
             echo
 
@@ -120,8 +122,9 @@ jobs:
             done
             echo
 
-            # re-append the rest of the previous changelog content
-            tail -n +3 CHANGELOG.md
+            # re-append the rest of the previous changelog content, dropping
+            # its leading blank line (if any) so blocks stay single-spaced
+            tail -n +2 CHANGELOG.md | awk 'NR==1 && $0=="" { next } { print }'
           } > CHANGELOG.md.new
 
           # replace the old changelog file with new one
@@ -129,37 +132,35 @@ jobs:
 
       - name: Push release branch
         if: steps.compute.outputs.skip != 'true'
-        env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          VERSION: ${{ steps.compute.outputs.version }}
-        run: |
-          git config user.name otelbot
-          git config user.email 197425009+otelbot@users.noreply.github.com
-          # fixed branch name (not per-version) so reruns update it in place instead of piling up PRs
-          git checkout -B release-request
-          git add lib/opentelemetry/auto_instrumentation/version.rb CHANGELOG.md
-          git commit -m "chore(release): v${VERSION}"
-          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" release-request
-
-      - name: Open or update release pull request
-        if: steps.compute.outputs.skip != 'true'
+        id: push
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ steps.compute.outputs.version }}
           TARGET_BRANCH: ${{ github.ref_name }}
         run: |
-          # check whether a release PR from this branch is already open,
-          # if so update the existing PR, otherwise create a new one
-          existing_pr="$(gh pr list --state open --head release-request --base "${TARGET_BRANCH}" --json number --jq '.[0].number')"
-          if [ -n "${existing_pr}" ]; then
-            gh pr edit "${existing_pr}" \
-              --title "chore(release): v${VERSION}" \
-              --body "Automated release pull request for v${VERSION}."
-          else
-            gh pr create \
-              --title "chore(release): v${VERSION}" \
-              --body "Automated release pull request for v${VERSION}." \
-              --label "release: pending" \
-              --base "${TARGET_BRANCH}" \
-              --head release-request
-          fi
+          git config user.name otelbot
+          git config user.email 197425009+otelbot@users.noreply.github.com
+
+          # unique per-run branch name, e.g. release/20260818151349-532415/main
+          branch="release/$(date -u +%Y%m%d%H%M%S)-$(printf '%06d' $((RANDOM % 1000000)))/${TARGET_BRANCH}"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+
+          git checkout -B "${branch}"
+          git add lib/opentelemetry/auto_instrumentation/version.rb CHANGELOG.md
+          git commit -m "chore(release): v${VERSION}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" "${branch}"
+
+      - name: Open release pull request
+        if: steps.compute.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.compute.outputs.version }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+          BRANCH: ${{ steps.push.outputs.branch }}
+        run: |
+          gh pr create \
+            --title "chore(release): v${VERSION}" \
+            --body "Automated release pull request for v${VERSION}." \
+            --label "release: pending" \
+            --base "${TARGET_BRANCH}" \
+            --head "${BRANCH}"
