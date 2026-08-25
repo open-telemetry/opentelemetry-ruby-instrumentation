@@ -1,5 +1,7 @@
 # linkspector config file is described at https://github.com/UmbrellaDocs/linkspector/blob/main/README.md#configuration
 dirs:
   - .
+excludedFiles:
+  - ./CHANGELOG.md
 useGitIgnore: true
 followRedirects: true

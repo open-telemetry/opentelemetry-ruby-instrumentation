@@ -24,6 +24,7 @@ jobs:
           fix: false
           globs: |
             **/*.md
+            !**/CHANGELOG.md
 
   markdown-link-check:
     name: Markdown Link Check
