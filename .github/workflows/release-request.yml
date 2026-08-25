@@ -22,6 +22,9 @@ jobs:
       contents: write # required for pushing the release branch
       pull-requests: write # required for creating the release PR
     runs-on: ubuntu-24.04
+    concurrency:
+      # serialize runs targeting the same base branch so they can't race and each create their own pending PR
+      group: release-request-${{ github.ref_name }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -130,6 +133,21 @@ jobs:
           # replace the old changelog file with new one
           mv CHANGELOG.md.new CHANGELOG.md
 
+      - name: Find existing release pull request
+        if: steps.compute.outputs.skip != 'true'
+        id: find-pr
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          # reuse a still-open release PR's branch, if one exists, instead of piling up duplicates;
+          # sort by number so the choice is deterministic if more than one is somehow open
+          existing="$(gh pr list --state open --label "release: pending" --base "${TARGET_BRANCH}" --json number,headRefName --jq 'sort_by(.number)[0]')"
+          if [ -n "${existing}" ] && [ "${existing}" != "null" ]; then
+            echo "number=$(echo "${existing}" | jq -r '.number')" >> "$GITHUB_OUTPUT"
+            echo "branch=$(echo "${existing}" | jq -r '.headRefName')" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Push release branch
         if: steps.compute.outputs.skip != 'true'
         id: push
@@ -137,30 +155,42 @@ jobs:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ steps.compute.outputs.version }}
           TARGET_BRANCH: ${{ github.ref_name }}
+          EXISTING_BRANCH: ${{ steps.find-pr.outputs.branch }}
         run: |
           git config user.name otelbot
           git config user.email 197425009+otelbot@users.noreply.github.com
 
-          # unique per-run branch name, e.g. release/20260818151349-532415/main
-          branch="release/$(date -u +%Y%m%d%H%M%S)-$(printf '%06d' $((RANDOM % 1000000)))/${TARGET_BRANCH}"
+          if [ -n "${EXISTING_BRANCH}" ]; then
+            branch="${EXISTING_BRANCH}"
+          else
+            # unique per-run branch name, e.g. release/20260818151349-532415/main
+            branch="release/$(date -u +%Y%m%d%H%M%S)-$(printf '%06d' $((RANDOM % 1000000)))/${TARGET_BRANCH}"
+          fi
           echo "branch=${branch}" >> "$GITHUB_OUTPUT"
 
           git checkout -B "${branch}"
           git add lib/opentelemetry/auto_instrumentation/version.rb CHANGELOG.md
           git commit -m "chore(release): v${VERSION}"
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" "${branch}"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" "${branch}"
 
-      - name: Open release pull request
+      - name: Open or update release pull request
         if: steps.compute.outputs.skip != 'true'
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ steps.compute.outputs.version }}
           TARGET_BRANCH: ${{ github.ref_name }}
           BRANCH: ${{ steps.push.outputs.branch }}
+          PR_NUMBER: ${{ steps.find-pr.outputs.number }}
         run: |
-          gh pr create \
-            --title "chore(release): v${VERSION}" \
-            --body "Automated release pull request for v${VERSION}." \
-            --label "release: pending" \
-            --base "${TARGET_BRANCH}" \
-            --head "${BRANCH}"
+          if [ -n "${PR_NUMBER}" ]; then
+            gh pr edit "${PR_NUMBER}" \
+              --title "chore(release): v${VERSION}" \
+              --body "Automated release pull request for v${VERSION}."
+          else
+            gh pr create \
+              --title "chore(release): v${VERSION}" \
+              --body "Automated release pull request for v${VERSION}." \
+              --label "release: pending" \
+              --base "${TARGET_BRANCH}" \
+              --head "${BRANCH}"
+          fi
