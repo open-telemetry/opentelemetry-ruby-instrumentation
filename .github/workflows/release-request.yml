@@ -22,6 +22,9 @@ jobs:
       contents: write # required for pushing the release branch
       pull-requests: write # required for creating the release PR
     runs-on: ubuntu-24.04
+    concurrency:
+      # serialize runs targeting the same base branch so they can't race and each create their own pending PR
+      group: release-request-${{ github.ref_name }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -108,8 +111,10 @@ jobs:
           CHANGELOG_ENTRIES: ${{ steps.compute.outputs.changelog }}
         run: |
           {
-            # keep the existing title/blank line at the top of the changelog
-            head -n 2 CHANGELOG.md
+            # keep the existing title at the top of the changelog
+            head -n 1 CHANGELOG.md
+            echo
+
             echo "## v${VERSION} / $(date +%Y-%m-%d)"
             echo
 
@@ -120,26 +125,53 @@ jobs:
             done
             echo
 
-            # re-append the rest of the previous changelog content
-            tail -n +3 CHANGELOG.md
+            # re-append the rest of the previous changelog content, dropping
+            # its leading blank line (if any) so blocks stay single-spaced
+            tail -n +2 CHANGELOG.md | awk 'NR==1 && $0=="" { next } { print }'
           } > CHANGELOG.md.new
 
           # replace the old changelog file with new one
           mv CHANGELOG.md.new CHANGELOG.md
 
+      - name: Find existing release pull request
+        if: steps.compute.outputs.skip != 'true'
+        id: find-pr
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          # reuse a still-open release PR's branch, if one exists, instead of piling up duplicates;
+          # sort by number so the choice is deterministic if more than one is somehow open
+          existing="$(gh pr list --state open --label "release: pending" --base "${TARGET_BRANCH}" --json number,headRefName --jq 'sort_by(.number)[0]')"
+          if [ -n "${existing}" ] && [ "${existing}" != "null" ]; then
+            echo "number=$(echo "${existing}" | jq -r '.number')" >> "$GITHUB_OUTPUT"
+            echo "branch=$(echo "${existing}" | jq -r '.headRefName')" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Push release branch
         if: steps.compute.outputs.skip != 'true'
+        id: push
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ steps.compute.outputs.version }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+          EXISTING_BRANCH: ${{ steps.find-pr.outputs.branch }}
         run: |
           git config user.name otelbot
           git config user.email 197425009+otelbot@users.noreply.github.com
-          # fixed branch name (not per-version) so reruns update it in place instead of piling up PRs
-          git checkout -B release-request
+
+          if [ -n "${EXISTING_BRANCH}" ]; then
+            branch="${EXISTING_BRANCH}"
+          else
+            # unique per-run branch name, e.g. release/20260818151349-532415/main
+            branch="release/$(date -u +%Y%m%d%H%M%S)-$(printf '%06d' $((RANDOM % 1000000)))/${TARGET_BRANCH}"
+          fi
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+
+          git checkout -B "${branch}"
           git add lib/opentelemetry/auto_instrumentation/version.rb CHANGELOG.md
           git commit -m "chore(release): v${VERSION}"
-          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" release-request
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" "${branch}"
 
       - name: Open or update release pull request
         if: steps.compute.outputs.skip != 'true'
@@ -147,12 +179,11 @@ jobs:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ steps.compute.outputs.version }}
           TARGET_BRANCH: ${{ github.ref_name }}
+          BRANCH: ${{ steps.push.outputs.branch }}
+          PR_NUMBER: ${{ steps.find-pr.outputs.number }}
         run: |
-          # check whether a release PR from this branch is already open,
-          # if so update the existing PR, otherwise create a new one
-          existing_pr="$(gh pr list --state open --head release-request --base "${TARGET_BRANCH}" --json number --jq '.[0].number')"
-          if [ -n "${existing_pr}" ]; then
-            gh pr edit "${existing_pr}" \
+          if [ -n "${PR_NUMBER}" ]; then
+            gh pr edit "${PR_NUMBER}" \
               --title "chore(release): v${VERSION}" \
               --body "Automated release pull request for v${VERSION}."
           else
@@ -161,5 +192,5 @@ jobs:
               --body "Automated release pull request for v${VERSION}." \
               --label "release: pending" \
               --base "${TARGET_BRANCH}" \
-              --head release-request
+              --head "${BRANCH}"
           fi
