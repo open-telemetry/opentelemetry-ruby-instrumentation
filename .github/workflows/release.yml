@@ -15,6 +15,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'release: pending') }}
     permissions:
       contents: write # required for tagging and creating the GitHub release
+      id-token: write # required for RubyGems trusted publishing
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repo
@@ -38,12 +39,6 @@ jobs:
       - name: Build gem
         run: gem build opentelemetry-auto-instrumentation.gemspec
 
-      - name: Publish gem to RubyGems
-        env:
-          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: gem push "opentelemetry-auto-instrumentation-${VERSION}.gem"
-
       - name: Extract release notes
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -65,3 +60,6 @@ jobs:
             --title "opentelemetry-auto-instrumentation v${VERSION}" \
             --notes-file release-notes.md \
             --target "$TARGET_BRANCH"
+
+      - name: Push gem
+        uses: rubygems/release-gem@v1
