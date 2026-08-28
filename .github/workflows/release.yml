@@ -51,6 +51,7 @@ jobs:
           ' CHANGELOG.md > release-notes.md
 
       - name: Create GitHub release
+        id: gh-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -63,3 +64,4 @@ jobs:
 
       - name: Release to RubyGems
         uses: rubygems/release-gem@7f9650160c1a4e7989fdc9855807bdbd421d8b6b # v1.4.1
+        if: steps.gh-release.outcome == 'success'
