@@ -61,5 +61,5 @@ jobs:
             --notes-file release-notes.md \
             --target "$TARGET_BRANCH"
 
-      - name: Push gem
-        uses: rubygems/release-gem@v1
+      - name: Release to RubyGems
+        uses: rubygems/release-gem@7f9650160c1a4e7989fdc9855807bdbd421d8b6b # v1.4.1
