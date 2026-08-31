@@ -155,7 +155,5 @@ def run_in_subprocess(env_vars = {}, opts = {})
   read_pipe.close
   Process.wait(pid)
 
-  # rubocop:disable Security/MarshalLoad
-  Marshal.load(result_data)
-  # rubocop:enable Security/MarshalLoad
+  Marshal.load(result_data) # rubocop:disable Security/MarshalLoad
 end
