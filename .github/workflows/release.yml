@@ -21,7 +21,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.event.pull_request.base.ref }}
           persist-credentials: false
 
       - name: Install Ruby
@@ -35,9 +35,6 @@ jobs:
         run: |
           version="$(ruby -Ilib -ropentelemetry/auto_instrumentation/version -e 'puts OpenTelemetry::AutoInstrumentation::VERSION')"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
-
-      - name: Build gem
-        run: gem build opentelemetry-auto-instrumentation.gemspec
 
       - name: Extract release notes
         env:
