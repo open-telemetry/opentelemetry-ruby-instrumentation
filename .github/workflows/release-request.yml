@@ -60,6 +60,13 @@ jobs:
             exit 0
           fi
 
+          # skip if every commit since the last release is ci-only (e.g. dependency bumps)
+          if ! echo "${commits}" | grep -qvE '^ci(\([^)]*\))?:'; then
+            echo "Only ci-related commits since ${last_tag:-the beginning of history}; skipping release request."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           # get current gem version
           current_version="$(grep -oE "VERSION = '[0-9]+\.[0-9]+\.[0-9]+'" lib/opentelemetry/auto_instrumentation/version.rb | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
           IFS='.' read -r major minor patch <<< "${current_version}"
@@ -83,7 +90,8 @@ jobs:
           echo "version=${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
           {
             echo -n "changelog="
-            echo "${commits}" | paste -sd '|' -
+            # ci-only commits are excluded from the changelog itself
+            echo "${commits}" | grep -vE '^ci(\([^)]*\))?:' | paste -sd '|' -
           } >> "$GITHUB_OUTPUT"
 
       - name: Create otelbot app token
