@@ -21,7 +21,7 @@ jobs:
     permissions:
       contents: write # required for pushing the release branch
       pull-requests: write # required for creating the release PR
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     concurrency:
       # serialize runs targeting the same base branch so they can't race and each create their own pending PR
       group: release-request-${{ github.ref_name }}

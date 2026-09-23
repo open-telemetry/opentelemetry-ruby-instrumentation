@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-24.04
+          - ubuntu-26.04
     name: "auto-instrumentation / ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     steps:
@@ -61,4 +61,4 @@ jobs:
         uses: $/.github/actions/test_gem
         with:
           gem: "opentelemetry-auto-instrumentation"
-          ruby: "jruby-10.0.2.0"
+          ruby: "jruby-10.1.1.0"
