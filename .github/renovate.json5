@@ -103,6 +103,19 @@
       automerge: true,
     },
     {
+      description: 'Group all CI/workflow dependency updates into a single PR, excluding runner OS and ruby version updates',
+      groupName: 'ci dependencies',
+      matchFileNames: [
+        '.github/**',
+      ],
+      excludeDepNames: [
+        'ruby',
+      ],
+      excludeDepTypes: [
+        'github-runner',
+      ],
+    },
+    {
       description: 'Require non-general dependencies in gemspec files to be approved',
       dependencyDashboardCategory: '{{depType}} should be migrated to Gemfile',
       matchCategories: [
