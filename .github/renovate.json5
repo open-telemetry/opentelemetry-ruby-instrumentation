@@ -108,11 +108,11 @@
       matchFileNames: [
         '.github/**',
       ],
-      excludeDepNames: [
-        'ruby',
+      matchDepNames: [
+        '!ruby',
       ],
-      excludeDepTypes: [
-        'github-runner',
+      matchDepTypes: [
+        '!github-runner',
       ],
     },
     {
