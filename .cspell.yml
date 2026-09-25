@@ -62,6 +62,7 @@ ignoreWords:
   - davidanson
   - Dockerfiles
   - millis
+  - autoinstrumentation
 words:
   - enqueuers
   - opentelemetry
