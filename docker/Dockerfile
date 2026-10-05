@@ -9,7 +9,7 @@
 # - Grant the necessary access to `/autoinstrumentation` directory. `chmod -R go+r /autoinstrumentation`
 # - For auto-instrumentation by container injection, the Linux command cp is
 #   used and must be availabe in the image.
-FROM ruby:3.3-slim AS build
+FROM ruby:3.3-slim@sha256:2bbd17947b9c898f46aedb91924fff8f4246ba39beaf51a726bad6ddae1d3094 AS build
 
 # Install packages
 RUN apt-get update && \
@@ -31,7 +31,7 @@ RUN mkdir -p src/opentelemetry/auto_instrumentation/ && \
     cp gems/opentelemetry-auto-instrumentation-*/lib/opentelemetry/auto_instrumentation/version.rb src/opentelemetry/auto_instrumentation/version.rb
 RUN rm -rf ruby/
 
-FROM busybox
+FROM busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
 
 # copy all gems from global install to autoinstrumentation
 COPY --from=build /ruby/instrumentation/ /autoinstrumentation
