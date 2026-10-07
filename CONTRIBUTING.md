@@ -30,6 +30,10 @@ From inside the container (or via `docker compose run`):
 bundle exec rake test
 ```
 
+## Publishing the OpenTelemetry Operator Image
+
+The `autoinstrumentation-ruby` image used by the [OpenTelemetry Operator](https://github.com/open-telemetry/opentelemetry-operator/blob/main/internal/config/testdata/config.yaml) is published by [publish-autoinstrumentation-ruby.yml](.github/workflows/publish-autoinstrumentation-ruby.yml). This workflow can only be triggered manually (`workflow_dispatch`) and is the way to publish a new image. The image tag is read from [docker/version.txt](docker/version.txt).
+
 ## Opening Pull Requests
 
 - Keep pull requests focused on a single concern.
