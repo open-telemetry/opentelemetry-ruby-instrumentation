@@ -10,6 +10,7 @@ The `opentelemetry-auto-instrumentation` gem provides automatic loading and init
 - [Usage](#usage)
 - [Configuration](#configuration)
 - [Troubleshooting](#troubleshooting)
+- [OpenTelemetry Operator Image](#opentelemetry-operator-image)
 - [Example](#example)
 - [Contributing](#contributing)
 - [Versioning](#versioning)
@@ -216,6 +217,10 @@ RUBYOPT="-r faraday -r opentelemetry-auto-instrumentation" ruby application.rb
 ### Dependency Version Conflicts
 
 This gem loads OpenTelemetry components and allowlisted helper dependencies (for example `google-protobuf` and `googleapis-common-protos-types`) directly into `$LOAD_PATH`. If your Gemfile pins different versions of these gems, you may encounter conflicts. Remove them from your Gemfile and let this gem manage them, or use `DISALLOWED_LIB_PATH` to exclude specific helper dependencies.
+
+## OpenTelemetry Operator Image
+
+The `autoinstrumentation-ruby` image for the [OpenTelemetry Operator](https://github.com/open-telemetry/opentelemetry-operator/blob/main/internal/config/testdata/config.yaml) is published by [publish-autoinstrumentation-ruby.yml](.github/workflows/publish-autoinstrumentation-ruby.yml). This workflow can only be triggered manually (`workflow_dispatch`) and is the way to publish a new image. The image tag is read from [docker/version.txt](docker/version.txt).
 
 ## Example
 

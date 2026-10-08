@@ -1,16 +1,6 @@
 name: Publish Ruby Auto-Instrumentation Image
 
 on:
-  push:
-    branches:
-      - main
-    paths: &path_filters
-      - "docker/**"
-      - ".github/workflows/publish-autoinstrumentation-ruby.yml" 
-  pull_request:
-    branches:
-      - main
-    paths: *path_filters
   workflow_dispatch:
 
 permissions:
