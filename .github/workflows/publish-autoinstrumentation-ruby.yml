@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: read
       packages: write # required for pushing the image to ghcr.io
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     env:
       # only push from the upstream repository; PRs and forks build without pushing             
       PUSH: ${{ github.repository == 'open-telemetry/opentelemetry-ruby-instrumentation' && github.event_name != 'pull_request' }} 
