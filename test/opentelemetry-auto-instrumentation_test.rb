@@ -13,7 +13,6 @@ describe 'OpenTelemetry::AutoInstrumentation' do
     ENV['OTEL_RUBY_ENABLED_INSTRUMENTATIONS'] = nil
     ENV['OTEL_RUBY_INSTRUMENTATION_NET_HTTP_ENABLED'] = nil
     ENV['OTEL_RUBY_RESOURCE_DETECTORS'] = nil
-    ENV['OTEL_RUBY_REQUIRE_BUNDLER'] = nil
     ENV['OTEL_RUBY_AUTO_INSTRUMENTATION_DEBUG'] = nil
   end
 
@@ -53,6 +52,67 @@ describe 'OpenTelemetry::AutoInstrumentation' do
     _(result[:error]).must_be_nil
     _(result[:instrumentation_names]).must_include 'OpenTelemetry::Instrumentation::Net::HTTP'
     _(result[:instrumentation_names]).wont_include 'OpenTelemetry::Instrumentation::Rake'
+  end
+
+  describe 'lazy instrumentation loading' do
+    # Verifies the TracePoint installer instruments a library that becomes present
+    # only after the gem loads. A fake instrumentation registered once the installer
+    # is enabled is skipped by the initial sweep, then installs as soon as its target
+    # class is defined.
+    it 'installs instrumentation for late-loaded libraries' do
+      result = run_in_subprocess({}, late_load: true)
+
+      _(result[:error]).must_be_nil
+      _(result[:installed_before]).must_equal false
+      _(result[:installed_after]).must_equal true
+    end
+
+    # Verifies that an instrumentation whose compatibility check raises while its library
+    # is still being required is retried rather than given up on: mid-require the namespace
+    # exists but the version does not, so compatible? raises. That must be read as "not
+    # ready yet", and the instrumentation must install on a later sweep once loading
+    # finishes.
+    it 'installs instrumentation whose compatibility check raises while half-loaded' do
+      result = run_in_subprocess({}, half_loaded: true)
+
+      _(result[:error]).must_be_nil
+      _(result[:installed_before]).must_equal false
+      _(result[:trace_point_enabled]).must_equal true
+      _(result[:installed_after]).must_equal true
+    end
+  end
+
+  describe 'TracePoint lifecycle' do
+    # Verifies the installer keeps the TracePoint enabled while uninstalled instrumentation
+    # remains.
+    it 'keeps the TracePoint enabled while instrumentation may still install' do
+      result = run_in_subprocess
+
+      _(result[:error]).must_be_nil
+      _(result[:trace_point_enabled]).must_equal true
+    end
+
+    # Verifies the installer does not arm the TracePoint at all when every requested
+    # instrumentation is already installed after the initial sweep, so there is nothing
+    # left to watch for.
+    it 'does not arm the TracePoint when everything requested is already installed' do
+      result = run_in_subprocess('OTEL_RUBY_ENABLED_INSTRUMENTATIONS' => 'net_http')
+
+      _(result[:error]).must_be_nil
+      _(result[:trace_point_enabled]).must_equal false
+    end
+
+    # Verifies a present but incompatible instrumentation is never handed to the registry,
+    # on any sweep. The registry logs a warning for every instrumentation it is asked to
+    # install but cannot, so pre-filtering keeps the logs quiet without any per-attempt
+    # bookkeeping.
+    it 'never submits a present but incompatible instrumentation to the registry' do
+      result = run_in_subprocess({}, incompatible_never_submitted: true)
+
+      _(result[:error]).must_be_nil
+      _(result[:submitted_incompatible]).must_equal false
+      _(result[:installed]).must_equal false
+    end
   end
 
   describe 'metrics and logs sdk' do
