@@ -9,7 +9,7 @@
 # - Grant the necessary access to `/autoinstrumentation` directory. `chmod -R go+r /autoinstrumentation`
 # - For auto-instrumentation by container injection, the Linux command cp is
 #   used and must be availabe in the image.
-FROM ruby:3.3-slim@sha256:2bbd17947b9c898f46aedb91924fff8f4246ba39beaf51a726bad6ddae1d3094 AS build
+FROM ruby:4.0-slim@sha256:ba6a00593739f9cb66de80ad2e395a93a52a13635867ee32918ba0ec083b1ff6 AS build
 
 # Install packages
 RUN apt-get update && \

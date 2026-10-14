@@ -12,7 +12,7 @@ group :test do
   gem 'minitest', '~> 6.0.6'
   gem 'opentelemetry-test-helpers', '~> 0.9.0'
   gem 'rake', '~> 13.4.2'
-  gem 'rubocop', '~> 1.91.0'
+  gem 'rubocop', '~> 1.92.0'
   gem 'rubocop-minitest', '~> 0.41.0'
   gem 'rubocop-performance', '~> 1.27.0'
   gem 'rubocop-rake', '~> 0.7.1'
