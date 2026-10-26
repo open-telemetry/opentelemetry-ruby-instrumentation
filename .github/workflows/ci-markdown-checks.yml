@@ -18,7 +18,7 @@ jobs:
 
       # equivalent cli: markdownlint-cli2  "**/*.md" "!**/CHANGELOG.md"  --config .markdownlint-cli2.yaml
       - name: "Markdown Lint Check"
-        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
+        uses: DavidAnson/markdownlint-cli2-action@696eb3f2509270d7b882d2aa68347bc676e7af34 # v25.0.0
         with:
           config: .markdownlint-cli2.yaml
           fix: false
@@ -54,7 +54,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Ruby
-        uses: ruby/setup-ruby@b1da4809b005e0178fe08a1d57317bffc00b7b4c # v1.332.0
+        uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
         with:
           ruby-version: "3.3.13"
           bundler-cache: true
