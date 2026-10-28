@@ -148,6 +148,21 @@
       ],
       enabled: false,
     },
+    {
+      description: 'Keep the autoinstrumentation image on the lowest supported Ruby; the gems are built for the builder Ruby version',
+      matchDepNames: [
+        'ruby',
+      ],
+      matchFileNames: [
+        'docker/Dockerfile',
+      ],
+      matchUpdateTypes: [
+        'major',
+        'minor',
+        'patch',
+      ],
+      enabled: false,
+    },
   ],
   customManagers: [
     {
