@@ -32,7 +32,10 @@ require 'net/http'
 #   Simulates normal application startup. Loads the auto-instrumentation and
 #   calls Bundler.require, then returns provider class names, resource attributes,
 #   and the list of installed instrumentation so tests can assert the SDK wired
-#   up the correct implementation classes.
+#   up the correct implementation classes, along with the resulting $LOAD_PATH.
+#
+# opts[:host_os] overrides RbConfig::CONFIG['host_os'] before loading, e.g. to
+# simulate a musl based system.
 def run_in_subprocess(env_vars = {}, opts = {})
   skip 'fork is not available on this platform' unless Process.respond_to?(:fork)
 
@@ -45,6 +48,7 @@ def run_in_subprocess(env_vars = {}, opts = {})
     read_pipe.close
     env_vars.each { |key, value| ENV[key] = value }
     ENV['OTEL_RUBY_REQUIRE_BUNDLER'] = 'false'
+    RbConfig::CONFIG['host_os'] = opts[:host_os] if opts[:host_os]
 
     begin
       load auto_instrumentation_path
@@ -131,7 +135,8 @@ def run_in_subprocess(env_vars = {}, opts = {})
           meter_provider_class: OpenTelemetry.meter_provider.class.name,
           logger_provider_class: OpenTelemetry.logger_provider.class.name,
           resource_attributes: resource_attributes,
-          instrumentation_names: instrumentation_names
+          instrumentation_names: instrumentation_names,
+          load_path: $LOAD_PATH.dup
         )
       end
 

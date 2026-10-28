@@ -222,6 +222,8 @@ This gem loads OpenTelemetry components and allowlisted helper dependencies (for
 
 The `autoinstrumentation-ruby` image for the [OpenTelemetry Operator](https://github.com/open-telemetry/opentelemetry-operator/blob/main/internal/config/testdata/config.yaml) is published by [publish-autoinstrumentation-ruby.yml](.github/workflows/publish-autoinstrumentation-ruby.yml). This workflow can only be triggered manually (`workflow_dispatch`) and is the way to publish a new image. The image tag is read from [docker/version.txt](docker/version.txt).
 
+`google-protobuf` has a native extension linked against the C library, so the image ships a glibc build in `gems/` and a musl build in `musl/gems/`. The loader uses the musl build when `RbConfig::CONFIG['host_os']` contains `musl` (e.g. Alpine based application containers), and the glibc build otherwise.
+
 ## Example
 
 See [example/README.md](example/README.md)
