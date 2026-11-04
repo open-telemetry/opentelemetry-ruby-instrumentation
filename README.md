@@ -220,7 +220,7 @@ This gem loads OpenTelemetry components and allowlisted helper dependencies (for
 
 ## OpenTelemetry Operator Image
 
-The `autoinstrumentation-ruby` image for the [OpenTelemetry Operator](https://github.com/open-telemetry/opentelemetry-operator/blob/main/internal/config/testdata/config.yaml) is published by [publish-autoinstrumentation-ruby.yml](.github/workflows/publish-autoinstrumentation-ruby.yml). This workflow can only be triggered manually (`workflow_dispatch`) and is the way to publish a new image. The image tag is read from [docker/version.txt](docker/version.txt).
+The `autoinstrumentation-ruby` image for the [OpenTelemetry Operator](https://github.com/open-telemetry/opentelemetry-operator/blob/main/internal/config/testdata/config.yaml) is published by [publish-autoinstrumentation-ruby.yml](.github/workflows/publish-autoinstrumentation-ruby.yml). This workflow can only be triggered manually (`workflow_dispatch`) and is the way to publish a new image. The image tag is the latest [opentelemetry-sdk](https://rubygems.org/gems/opentelemetry-sdk) version on RubyGems at publish time. Re-running the workflow while that version is unchanged overwrites the existing tag.
 
 ## Example
 
