@@ -5,6 +5,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 require 'test_helper'
+require 'fileutils'
+require 'tmpdir'
 
 describe 'OpenTelemetry::AutoInstrumentation' do
   let(:auto_instrumentation_path) { File.expand_path('../lib/opentelemetry-auto-instrumentation.rb', __dir__) }
@@ -128,6 +130,44 @@ describe 'OpenTelemetry::AutoInstrumentation' do
 
       _(log[:body]).must_equal 'test log message'
       _(log[:severity_text]).must_equal 'INFO'
+    end
+  end
+
+  describe 'google-protobuf C library selection' do
+    let(:gem_path) { Dir.mktmpdir }
+    let(:glibc_protobuf) { File.join(gem_path, 'gems', 'google-protobuf-4.0.0-x86_64-linux-gnu') }
+    let(:musl_protobuf) { File.join(gem_path, 'musl', 'gems', 'google-protobuf-4.0.0-x86_64-linux-musl') }
+
+    before { FileUtils.mkdir_p(File.join(glibc_protobuf, 'lib')) }
+    after { FileUtils.rm_rf(gem_path) }
+
+    # Verifies that on musl based systems (e.g. Alpine) the musl build of
+    # google-protobuf replaces the glibc build in $LOAD_PATH.
+    it 'loads the musl build on musl based systems' do
+      FileUtils.mkdir_p(File.join(musl_protobuf, 'lib'))
+      result = run_in_subprocess({ 'OTEL_RUBY_ADDITIONAL_GEM_PATH' => gem_path }, host_os: 'linux-musl')
+
+      _(result[:error]).must_be_nil
+      _(result[:load_path]).must_include "#{musl_protobuf}/lib"
+      _(result[:load_path]).wont_include "#{glibc_protobuf}/lib"
+    end
+
+    # Verifies that glibc based systems keep the glibc build even when a musl build is available.
+    it 'loads the glibc build on glibc based systems' do
+      FileUtils.mkdir_p(File.join(musl_protobuf, 'lib'))
+      result = run_in_subprocess({ 'OTEL_RUBY_ADDITIONAL_GEM_PATH' => gem_path }, host_os: 'linux-gnu')
+
+      _(result[:error]).must_be_nil
+      _(result[:load_path]).must_include "#{glibc_protobuf}/lib"
+      _(result[:load_path]).wont_include "#{musl_protobuf}/lib"
+    end
+
+    # Verifies that musl based systems fall back to the glibc build when no musl build is present.
+    it 'falls back to the glibc build when no musl build is present' do
+      result = run_in_subprocess({ 'OTEL_RUBY_ADDITIONAL_GEM_PATH' => gem_path }, host_os: 'linux-musl')
+
+      _(result[:error]).must_be_nil
+      _(result[:load_path]).must_include "#{glibc_protobuf}/lib"
     end
   end
 
