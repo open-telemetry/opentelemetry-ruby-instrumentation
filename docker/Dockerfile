@@ -48,7 +48,7 @@ RUN gem install google-protobuf -v "$(cat /tmp/google-protobuf-version)" \
       --install-dir /ruby/musl --ignore-dependencies --no-document && \
     rm -rf /ruby/musl/cache
 
-FROM busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+FROM busybox@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
 
 # copy all gems from global install to autoinstrumentation
 COPY --from=build /ruby/instrumentation/ /autoinstrumentation
