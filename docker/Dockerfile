@@ -12,7 +12,7 @@
 # - google-protobuf has a native extension that is linked against the C library. The glibc build goes in
 #   `/autoinstrumentation/gems` and the musl (Alpine) build goes in `/autoinstrumentation/musl/gems`.
 #   autoinstrumentation.rb loads the one that matches the application's C library.
-FROM ruby:3.3-slim@sha256:eaeeb51411875c81f7f9b5353558decb8e3e1dbde38b18ff1d6c910f95cf860b AS build
+FROM ruby:3.3-slim@sha256:db3ad6dd68a886d51a187fb9bf486052f2976cdbe3b750169c25092aba1297fa AS build
 
 # Install packages
 RUN apt-get update && \
