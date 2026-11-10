@@ -37,7 +37,7 @@ RUN rm -rf ruby/
 RUN ruby -rbundler -e 'print Bundler::LockfileParser.new(File.read("Gemfile.lock")).specs.find { |s| s.name == "google-protobuf" }.version' > /ruby/google-protobuf-version
 
 # Install the same google-protobuf version for musl based application containers (e.g. Alpine)
-FROM ruby:3.3-alpine@sha256:24ea89e8103548bc02b53ae5212313afaccc79d11c5f93982bd4de298ec0934d AS build-musl
+FROM ruby:3.3-alpine@sha256:2fda53cb7c1c93618593afce7404e311b2b44b0eab35bfeace3981aa0be4ff54 AS build-musl
 
 # build-base is only used on architectures without a precompiled musl gem (s390x, ppc64le)
 RUN apk add --no-cache build-base
