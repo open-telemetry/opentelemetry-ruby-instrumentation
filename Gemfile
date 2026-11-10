@@ -9,7 +9,7 @@ source 'https://rubygems.org'
 gemspec
 
 group :test do
-  gem 'minitest', '~> 6.0.6'
+  gem 'minitest', '~> 6.1.0'
   gem 'opentelemetry-test-helpers', '~> 0.9.0'
   gem 'rake', '~> 13.4.2'
   gem 'rubocop', '~> 1.92.0'
