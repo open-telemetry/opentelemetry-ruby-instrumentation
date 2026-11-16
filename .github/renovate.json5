@@ -116,6 +116,19 @@
       ],
     },
     {
+      description: 'Group all gemspec dependency updates into a single PR, excluding ruby version updates',
+      groupName: 'gemspec dependencies',
+      matchCategories: [
+        'custom',
+      ],
+      matchFileNames: [
+        '**/*.gemspec',
+      ],
+      matchDepNames: [
+        '!ruby',
+      ],
+    },
+    {
       description: 'Require non-general dependencies in gemspec files to be approved',
       dependencyDashboardCategory: '{{depType}} should be migrated to Gemfile',
       matchCategories: [
