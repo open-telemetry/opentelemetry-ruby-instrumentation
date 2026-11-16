@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'opentelemetry-api', '~> 1.9.0'
   spec.add_dependency 'opentelemetry-exporter-otlp', '~> 0.33.0'
-  spec.add_dependency 'opentelemetry-exporter-otlp-logs', '~> 0.4.0'
+  spec.add_dependency 'opentelemetry-exporter-otlp-logs', '~> 0.7.0'
   spec.add_dependency 'opentelemetry-exporter-otlp-metrics', '~> 0.8.0'
   spec.add_dependency 'opentelemetry-helpers-mysql', '~> 0.5.0'
   spec.add_dependency 'opentelemetry-helpers-sql', '~> 0.3.0'
