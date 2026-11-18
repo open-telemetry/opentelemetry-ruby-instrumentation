@@ -12,7 +12,7 @@
 # - google-protobuf has a native extension that is linked against the C library. The glibc build goes in
 #   `/autoinstrumentation/gems` and the musl (Alpine) build goes in `/autoinstrumentation/musl/gems`.
 #   autoinstrumentation.rb loads the one that matches the application's C library.
-FROM ruby:3.3-slim@sha256:eaeeb51411875c81f7f9b5353558decb8e3e1dbde38b18ff1d6c910f95cf860b AS build
+FROM ruby:3.3-slim@sha256:db3ad6dd68a886d51a187fb9bf486052f2976cdbe3b750169c25092aba1297fa AS build
 
 # Install packages
 RUN apt-get update && \
@@ -37,7 +37,7 @@ RUN rm -rf ruby/
 RUN ruby -rbundler -e 'print Bundler::LockfileParser.new(File.read("Gemfile.lock")).specs.find { |s| s.name == "google-protobuf" }.version' > /ruby/google-protobuf-version
 
 # Install the same google-protobuf version for musl based application containers (e.g. Alpine)
-FROM ruby:3.3-alpine@sha256:24ea89e8103548bc02b53ae5212313afaccc79d11c5f93982bd4de298ec0934d AS build-musl
+FROM ruby:3.3-alpine@sha256:2fda53cb7c1c93618593afce7404e311b2b44b0eab35bfeace3981aa0be4ff54 AS build-musl
 
 # build-base is only used on architectures without a precompiled musl gem (s390x, ppc64le)
 RUN apk add --no-cache build-base
@@ -48,7 +48,7 @@ RUN gem install google-protobuf -v "$(cat /tmp/google-protobuf-version)" \
       --install-dir /ruby/musl --ignore-dependencies --no-document && \
     rm -rf /ruby/musl/cache
 
-FROM busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+FROM busybox@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
 
 # copy all gems from global install to autoinstrumentation
 COPY --from=build /ruby/instrumentation/ /autoinstrumentation
