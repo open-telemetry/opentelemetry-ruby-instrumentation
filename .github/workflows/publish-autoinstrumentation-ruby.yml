@@ -26,7 +26,13 @@ jobs:
 
       - name: Read version
         id: version
-        run: echo "version=$(cat docker/version.txt)" >> "$GITHUB_OUTPUT"
+        run: |
+          version=$(curl -fsS --retry 3 https://rubygems.org/api/v1/versions/opentelemetry-sdk/latest.json | jq -r '.version')
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unexpected opentelemetry-sdk version: '$version'" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Docker meta
         id: meta
