@@ -35,7 +35,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'opentelemetry-helpers-sql-processor', '~> 0.5.0'
   spec.add_dependency 'opentelemetry-instrumentation-all', '~> 0.91.0'
   spec.add_dependency 'opentelemetry-logs-api', '~> 0.7.0'
-  spec.add_dependency 'opentelemetry-logs-sdk', '~> 0.5.1'
+  spec.add_dependency 'opentelemetry-logs-sdk', '~> 0.8.0'
   spec.add_dependency 'opentelemetry-metrics-api', '~> 0.5.0'
   spec.add_dependency 'opentelemetry-metrics-sdk', '~> 0.13.1'
   spec.add_dependency 'opentelemetry-resource-detector-aws', '~> 0.7.0'
