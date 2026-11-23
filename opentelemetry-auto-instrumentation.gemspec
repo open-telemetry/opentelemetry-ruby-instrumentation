@@ -41,7 +41,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'opentelemetry-resource-detector-aws', '~> 0.7.0'
   spec.add_dependency 'opentelemetry-resource-detector-azure', '~> 0.4.0'
   spec.add_dependency 'opentelemetry-resource-detector-container', '~> 0.4.0'
-  spec.add_dependency 'opentelemetry-sdk', '~> 1.11.0'
+  spec.add_dependency 'opentelemetry-sdk', '~> 1.13.0'
 
   if spec.respond_to?(:metadata)
     spec.metadata['changelog_uri'] = "https://rubydoc.info/gems/#{spec.name}/#{spec.version}/file/CHANGELOG.md"
