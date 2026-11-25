@@ -118,30 +118,18 @@
     {
       description: 'Group all gemspec dependency updates into a single PR, excluding ruby version updates',
       groupName: 'gemspec dependencies',
-      matchCategories: [
-        'custom',
-      ],
-      matchFileNames: [
-        '**/*.gemspec',
-      ],
-      matchDepNames: [
-        '!ruby',
+      matchManagers: [
+        'gemspec',
       ],
     },
     {
-      description: 'Require non-general dependencies in gemspec files to be approved',
+      description: 'Require non-general dependencies in gemspec files to be approved (for add_development_dependency)',
       dependencyDashboardCategory: '{{depType}} should be migrated to Gemfile',
-      matchCategories: [
-        'custom',
-      ],
-      matchDepNames: [
-        '!ruby',
+      matchManagers: [
+        'gemspec',
       ],
       matchDepTypes: [
-        '!dependency',
-      ],
-      matchFileNames: [
-        '**/*.gemspec',
+        '!runtime',
       ],
       dependencyDashboardApproval: true,
     },
@@ -178,19 +166,6 @@
     },
   ],
   customManagers: [
-    {
-      customType: 'regex',
-      description: 'Update dependencies in gemspecs',
-      managerFilePatterns: [
-        '**/*.gemspec',
-      ],
-      matchStrings: [
-        ".add_(?<depType>.*dependency)\\s'(?<packageName>.+?)',\\s'(?<depVersion>.+\\s[0-9.]+)'",
-      ],
-      datasourceTemplate: 'rubygems',
-      versioningTemplate: 'ruby',
-      currentValueTemplate: '{{depVersion}}',
-    },
     {
       customType: 'regex',
       description: 'Update min sdk in gemspec',
